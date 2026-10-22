@@ -1,5 +1,12 @@
 # Review and changes (2026-10-20)
 
+## Branding
+- Replaced the text-only sidebar mark with the supplied Apex Labs logo. Light mode uses the original red-and-dark wordmark; dark mode uses a matching red-and-white version for legibility. The standalone builder embeds both logo files so exports remain self-contained.
+
+## Weather impact
+- Added a dedicated **Weather Impact** page for constructor-level analysis. It joins the supplied weather records to race results by season and round, compares each constructor's normalized race pace against precipitation and temperature, and shows wet/dry pace and DNF-rate benchmarks.
+- Added `weather_impact.json` to the build output. Its pace estimate uses each driver's fastest-quarter median lap time and compares constructors within the same race, avoiding misleading raw lap-time comparisons between circuits.
+
 ## Data attribution
 - Added a **Sources** page to the dashboard navigation. It credits the Formula 1 World Championship dataset by Rohan Rao and the Formula 1 Weather Info dataset by Mariya Kostyrya, links directly to both Kaggle pages, and documents the dashboard’s data-joining logic.
 

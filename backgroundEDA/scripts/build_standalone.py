@@ -11,6 +11,7 @@ Run build_data.py first.
 from __future__ import annotations
 
 import argparse
+import base64
 import re
 from pathlib import Path
 
@@ -18,12 +19,17 @@ from pathlib import Path
 # so the script works no matter which directory it is run from.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-PAGES = {"overview": "index.html", "comparison": "comparison.html", "drivers": "drivers.html", "circuits": "circuits.html", "constructors": "constructors.html", "sources": "sources.html"}
+PAGES = {"overview": "index.html", "comparison": "comparison.html", "drivers": "drivers.html", "circuits": "circuits.html", "constructors": "constructors.html", "weather": "weather.html", "sources": "sources.html"}
 
 
 def inline_script(text: str) -> str:
     # A literal "</script" inside inlined code would end the tag early.
     return "<script>\n" + re.sub(r"</(script)", r"<\\/\1", text, flags=re.IGNORECASE) + "\n</script>"
+
+
+def data_uri(path: Path) -> str:
+    """Embed a local image so the one-file build remains self-contained."""
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
 def main() -> None:
@@ -37,6 +43,10 @@ def main() -> None:
         raise SystemExit(f"{data_js} not found. Run scripts/build_data.py first.")
 
     index = (site / "index.html").read_text(encoding="utf-8")
+    logos = {
+        "light": data_uri(site / "assets/images/apex-labs-logo-light.png"),
+        "dark": data_uri(site / "assets/images/apex-labs-logo-dark.png"),
+    }
     head_script = re.search(r"<script>.*?</script>", index, flags=re.DOTALL).group(0)  # theme bootstrap
     templates = []
     for key, filename in PAGES.items():
@@ -60,6 +70,7 @@ def main() -> None:
         *templates,
         inline_script((site / "assets/js/vendor/d3.min.js").read_text(encoding="utf-8")),
         inline_script(data_js.read_text(encoding="utf-8")),
+        inline_script("window.APEX_BRAND_LOGOS=" + repr(logos).replace("'", '"') + ";"),
         inline_script((site / "assets/js/dashboard.js").read_text(encoding="utf-8")),
         "</body>",
         "</html>",

@@ -2,14 +2,20 @@
 (() => {
   "use strict";
 
-  const DATA_FILES = ["metadata", "results", "race_metrics", "driver_seasons", "constructor_seasons", "circuit_summary", "qualifying", "sprint_results"];
+  const DATA_FILES = ["metadata", "results", "race_metrics", "driver_seasons", "constructor_seasons", "circuit_summary", "qualifying", "sprint_results", "weather_impact"];
   const PAGES = {
     overview: { href: "index.html", icon: "▣", label: "Race Overview", title: "Race Overview" },
     comparison: { href: "comparison.html", icon: "⇄", label: "Race Comparison", title: "Race Comparison" },
     drivers: { href: "drivers.html", icon: "◉", label: "Drivers", title: "Drivers" },
     circuits: { href: "circuits.html", icon: "⌁", label: "Circuits", title: "Circuits" },
     constructors: { href: "constructors.html", icon: "▰", label: "Constructors", title: "Constructors" },
+    weather: { href: "weather.html", icon: "☂", label: "Weather Impact", title: "Weather Impact" },
     sources: { href: "sources.html", icon: "◌", label: "Sources", title: "Data Sources" },
+  };
+  // The standalone builder replaces these paths with embedded image data.
+  const BRAND_LOGOS = window.APEX_BRAND_LOGOS || {
+    light: "assets/images/apex-labs-logo-light.png",
+    dark: "assets/images/apex-labs-logo-dark.png",
   };
   // The single-file build (scripts/build_standalone.py) ships every page as a <template>.
   const standalone = Boolean(document.querySelector("template[data-page-template]"));
@@ -159,7 +165,7 @@
     const target = $("[data-shell-nav]");
     const seasons = state.data?.seasons;
     const span = seasons?.length ? `${seasons[0]}–${seasons.at(-1)}` : "1950–2024";
-    target.innerHTML = `<a class="brand" href="${pageHref("overview")}"><span class="brand-mark">A</span><span class="brand-copy">APEX LABS<small>F1 ANALYTICS</small></span></a>
+    target.innerHTML = `<a class="brand" href="${pageHref("overview")}" aria-label="Apex Labs F1 Analytics home"><span class="brand-logo-wrap"><img class="brand-logo brand-logo-light" src="${BRAND_LOGOS.light}" alt="Apex Labs"><img class="brand-logo brand-logo-dark" src="${BRAND_LOGOS.dark}" alt=""></span><span class="brand-mark brand-mark-compact" aria-hidden="true">A</span></a>
       <nav class="nav-links" aria-label="Dashboard pages">${Object.entries(PAGES).map(([key, item]) => `<a class="nav-link ${key === state.page ? "active" : ""}" href="${pageHref(key)}" ${key === state.page ? "aria-current=\"page\"" : ""} title="${item.label}"><span class="nav-icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span></a>`).join("")}</nav>
       <p class="sidebar-foot">Formula 1 historical intelligence<br><b>${span}</b>${state.data ? ` · ${fmtNumber(state.data.races.length)} races` : ""}</p>`;
   }
@@ -193,7 +199,7 @@
     state.rerender = null;
     if (!state.data) return;
     demoBanner();
-    ({ overview, comparison, drivers, circuits, constructors })[state.page]?.();
+    ({ overview, comparison, drivers, circuits, constructors, weather })[state.page]?.();
   }
   // Charts are sized from their container, so redraw when the width changes (height-only resizes are ignored).
   let resizeTimer, lastWidth = window.innerWidth;
@@ -237,6 +243,7 @@
       circuitSummary: raw.circuit_summary,
       qualifying: raw.qualifying,
       sprintResults: raw.sprint_results,
+      weatherImpact: raw.weather_impact || [],
       drivers: byId(metadata.drivers, "driverId"),
       constructors: byId(metadata.constructors, "constructorId"),
       circuits: byId(metadata.circuits, "circuitId"),
@@ -520,6 +527,128 @@ python scripts/build_data.py --data-dir SampleData --output-dir site/data --demo
     });
     drawAxis(svg.append("g").attr("transform", `translate(0,${height})`), d3.axisBottom(x).ticks(6));
     drawAxis(svg.append("g"), d3.axisLeft(y).tickSize(0).tickPadding(10), "y-names");
+  }
+
+  /* ---------- Weather impact ---------- */
+  function weather() {
+    const allRows = state.data.weatherImpact.filter((row) => Number.isFinite(row.representativeLapMs));
+    const filterTarget = $("[data-weather-filters]");
+    if (!allRows.length) {
+      empty(filterTarget, "Add <code>weather_features_v4.csv</code> to <code>Data</code>, then rebuild the dashboard data.");
+      $("[data-weather-kpis]").innerHTML = "";
+      document.querySelectorAll("[data-chart^='weather-'], [data-weather-table]").forEach((target) => empty(target, "No constructor lap-time records with matched weather are available."));
+      return;
+    }
+
+    const years = [...new Set(allRows.map((row) => row.year))].sort((a, b) => a - b);
+    const circuits = d3.rollups(allRows, (rows) => rows.length, (row) => row.circuitId)
+      .sort((a, b) => state.data.circuits.get(a[0])?.name.localeCompare(state.data.circuits.get(b[0])?.name));
+    const constructors = [...new Set(allRows.map((row) => row.constructorId))]
+      .sort((a, b) => teamName(a).localeCompare(teamName(b)));
+    const filters = { start: years[0], end: years.at(-1), circuitId: "", constructorId: "", condition: "" };
+
+    function fill() {
+      filterTarget.innerHTML =
+        selectMarkup("weather-start", "From season", years.map((year) => [year, year]), filters.start) +
+        selectMarkup("weather-end", "To season", years.map((year) => [year, year]), filters.end) +
+        selectMarkup("weather-circuit", "Circuit", [["", "All circuits"], ...circuits.map(([id, count]) => [id, `${state.data.circuits.get(id)?.name || id} (${count})`])], filters.circuitId, true) +
+        selectMarkup("weather-constructor", "Constructor", [["", "All constructors"], ...constructors.map((id) => [id, teamName(id)])], filters.constructorId, true) +
+        selectMarkup("weather-condition", "Conditions", [["", "Wet and dry"], ["Dry", "Dry only"], ["Wet", "Wet only"]], filters.condition) +
+        `<button class="filter-reset" type="button" data-reset-weather>Reset filters</button>`;
+      onChange("weather-start", (value) => { filters.start = +value; orderRange(filters); fill(); render(); });
+      onChange("weather-end", (value) => { filters.end = +value; orderRange(filters); fill(); render(); });
+      onChange("weather-circuit", (value) => { filters.circuitId = value; render(); });
+      onChange("weather-constructor", (value) => { filters.constructorId = value; render(); });
+      onChange("weather-condition", (value) => { filters.condition = value; render(); });
+      $("[data-reset-weather]").addEventListener("click", () => {
+        Object.assign(filters, { start: years[0], end: years.at(-1), circuitId: "", constructorId: "", condition: "" });
+        fill(); render();
+      });
+    }
+
+    function baseRows() {
+      return allRows.filter((row) => row.year >= filters.start && row.year <= filters.end &&
+        (!filters.circuitId || row.circuitId === +filters.circuitId) &&
+        (!filters.constructorId || row.constructorId === +filters.constructorId));
+    }
+    function render() {
+      const base = baseRows();
+      const rows = filters.condition ? base.filter((row) => row.condition === filters.condition) : base;
+      const dry = base.filter((row) => row.condition === "Dry");
+      const wet = base.filter((row) => row.condition === "Wet");
+      const averageGap = d3.mean(rows, (row) => row.paceGapPercent);
+      const wetDryGap = wet.length && dry.length ? d3.mean(wet, (row) => row.paceGapPercent) - d3.mean(dry, (row) => row.paceGapPercent) : NaN;
+      const entries = sum(rows, (row) => row.entryCount);
+      const dnfs = sum(rows, (row) => row.dnfCount);
+      kpis($("[data-weather-kpis]"), [
+        { label: "Constructor-race samples", value: fmtNumber(rows.length), detail: `${fmtNumber(sum(rows, (row) => row.lapSamples))} recorded laps` },
+        { label: "Average pace gap", value: Number.isFinite(averageGap) ? fmtPct(averageGap) : "—", detail: "Gap to fastest constructor in each race" },
+        { label: "Wet vs. dry gap", value: Number.isFinite(wetDryGap) ? signed(wetDryGap, fmtOne) + "%" : "—", detail: wet.length && dry.length ? "Wet average minus dry average" : "Both conditions are required" },
+        { label: "DNF rate", value: entries ? fmtPct((100 * dnfs) / entries) : "—", detail: `${fmtNumber(dnfs)} non-classified entries` },
+      ]);
+      legend("weather-precipitation", [["dry", "Dry race"], ["wet", "Wet race"]]);
+      legend("weather-temperature", [["dry", "Dry race"], ["wet", "Wet race"]]);
+      legend("weather-condition", [["dry", "Dry"], ["wet", "Wet"]]);
+      weatherScatter($("[data-chart='weather-precipitation']"), rows, { xKey: "precipitationMm", xLabel: "Precipitation (mm)", title: "Precipitation vs. constructor pace" });
+      weatherConditionBars($("[data-chart='weather-condition']"), base, "pace");
+      weatherScatter($("[data-chart='weather-temperature']"), rows, { xKey: "temperatureC", xLabel: "Temperature (°C)", title: "Temperature vs. constructor pace" });
+      weatherConditionBars($("[data-chart='weather-reliability']"), base, "reliability");
+      dataTable($("[data-weather-table]"), [
+        { key: "year", label: "Year", strong: true },
+        { key: "race", label: "Grand Prix", value: (row) => row.raceName },
+        { key: "circuit", label: "Circuit", value: (row) => row.circuitName },
+        { key: "constructor", label: "Constructor", value: (row) => teamName(row.constructorId) },
+        { key: "condition", label: "Conditions", html: (row) => weatherChip({ available: true, condition: row.condition, temperatureC: row.temperatureC }) },
+        { key: "precipitation", label: "Precip.", numeric: true, value: (row) => row.precipitationMm, html: (row) => `${fmtOne(row.precipitationMm)} mm` },
+        { key: "temperature", label: "Temp.", numeric: true, value: (row) => row.temperatureC, html: (row) => `${fmtOne(row.temperatureC)}°C` },
+        { key: "averageLap", label: "Avg. lap", numeric: true, value: (row) => row.teamAverageLapMs, html: (row) => lapTime(row.teamAverageLapMs) },
+        { key: "paceGap", label: "Pace gap", numeric: true, value: (row) => row.paceGapPercent, html: (row) => `${fmtOne(row.paceGapPercent)}%` },
+        { key: "dnfs", label: "DNFs", numeric: true, value: (row) => row.dnfCount },
+      ], rows, { key: "paceGap", dir: "desc" });
+    }
+    fill(); render(); state.rerender = render;
+  }
+
+  function weatherScatter(target, rows, { xKey, xLabel, title }) {
+    const data = rows.filter((row) => Number.isFinite(row[xKey]) && Number.isFinite(row.paceGapPercent));
+    if (data.length < 2) return empty(target, "At least two matched constructor-race records are required for this view.");
+    const { svg, width, height } = svgFor(target, 290, { top: 16, right: 20, bottom: 46, left: 54 });
+    const extent = d3.extent(data, (row) => row[xKey]);
+    const xPad = Math.max(0.5, (extent[1] - extent[0]) * 0.08);
+    const yMax = d3.max(data, (row) => row.paceGapPercent) || 1;
+    const x = d3.scaleLinear().domain(extent[0] === extent[1] ? [extent[0] - xPad, extent[1] + xPad] : [extent[0] - xPad, extent[1] + xPad]).nice().range([0, width]);
+    const y = d3.scaleLinear().domain([0, yMax * 1.08]).nice().range([height, 0]);
+    svg.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(""));
+    const dots = svg.selectAll("circle").data(data).join("circle")
+      .attr("class", (row) => (row.condition === "Wet" ? "weather-dot wet" : "weather-dot dry"))
+      .attr("cx", (row) => x(row[xKey])).attr("cy", (row) => y(row.paceGapPercent)).attr("r", 0);
+    dots.transition().duration(ms(350)).delay((_, index) => ms(Math.min(index * 2, 360))).attr("r", 4.2);
+    hover(dots, (row) => `<strong>${escape(teamName(row.constructorId))}</strong>${escape(row.year)} ${escape(row.raceName)} · ${escape(row.condition)}<br>${escape(xLabel)}: ${fmtOne(row[xKey])}<br><span class="muted">Pace gap ${fmtOne(row.paceGapPercent)}% · Avg. lap ${lapTime(row.teamAverageLapMs)}</span>`);
+    drawAxis(svg.append("g").attr("transform", `translate(0,${height})`), d3.axisBottom(x).ticks(6));
+    drawAxis(svg.append("g"), d3.axisLeft(y).ticks(5).tickFormat((value) => `${value}%`));
+    svg.append("text").attr("class", "chart-label").attr("x", width / 2).attr("y", height + 38).attr("text-anchor", "middle").text(xLabel);
+    svg.append("text").attr("class", "chart-label").attr("transform", `translate(${-42},${height / 2}) rotate(-90)`).attr("text-anchor", "middle").text("Pace gap to fastest constructor");
+  }
+
+  function weatherConditionBars(target, rows, mode) {
+    const groups = ["Dry", "Wet"].map((condition) => {
+      const values = rows.filter((row) => row.condition === condition);
+      const value = mode === "pace"
+        ? d3.mean(values, (row) => row.paceGapPercent)
+        : 100 * sum(values, (row) => row.dnfCount) / sum(values, (row) => row.entryCount);
+      return { condition, rows: values.length, value: Number.isFinite(value) ? value : null };
+    }).filter((row) => row.value != null);
+    if (!groups.length) return empty(target, "No wet or dry records match the selected filters.");
+    const { svg, width, height } = svgFor(target, 290, { top: 16, right: 12, bottom: 38, left: 44 });
+    const x = d3.scaleBand().domain(groups.map((row) => row.condition)).range([0, width]).padding(0.38);
+    const y = d3.scaleLinear().domain([0, d3.max(groups, (row) => row.value) || 1]).nice().range([height, 0]);
+    svg.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(5).tickSize(-width).tickFormat(""));
+    const bars = svg.selectAll("rect").data(groups).join("rect").attr("class", (row) => `weather-bar ${row.condition.toLowerCase()}`).attr("x", (row) => x(row.condition)).attr("width", x.bandwidth()).attr("rx", 3);
+    animateHeight(bars, (row) => y(row.value), (row) => height - y(row.value), height);
+    hover(bars, (row) => `<strong>${row.condition} conditions</strong>${mode === "pace" ? `${fmtOne(row.value)}% average pace gap` : `${fmtPct(row.value)} DNF rate`}<br><span class="muted">${row.rows} constructor-race records</span>`);
+    svg.selectAll(".bar-label").data(groups).join("text").attr("class", "bar-label").attr("text-anchor", "middle").attr("x", (row) => x(row.condition) + x.bandwidth() / 2).attr("y", (row) => y(row.value) - 6).text((row) => mode === "pace" ? `${fmtOne(row.value)}%` : fmtPct(row.value));
+    drawAxis(svg.append("g").attr("transform", `translate(0,${height})`), d3.axisBottom(x).tickSize(0).tickPadding(9));
+    drawAxis(svg.append("g"), d3.axisLeft(y).ticks(5).tickFormat((value) => `${value}%`));
   }
 
   /* ---------- Drivers & Constructors (shared season views) ---------- */

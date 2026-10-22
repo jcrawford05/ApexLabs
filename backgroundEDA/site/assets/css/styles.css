@@ -76,11 +76,16 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   display: flex; flex-direction: column; gap: 28px;
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 4px 10px; text-decoration: none; color: var(--text); }
+.brand-logo-wrap { display: block; width: 100%; height: 56px; overflow: hidden; }
+.brand-logo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.brand-logo-dark, html[data-theme="dark"] .brand-logo-light { display: none; }
+html[data-theme="dark"] .brand-logo-dark { display: block; }
 .brand-mark {
   width: 32px; height: 32px; display: grid; place-items: center; flex: none;
   background: linear-gradient(135deg, var(--accent), #ff5a4e); color: #fff;
   font-weight: 900; font-style: italic; clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
 }
+.brand-mark-compact { display: none; }
 .brand-copy { display: grid; line-height: 1; gap: 4px; font-weight: 800; letter-spacing: .12em; font-size: 12px; }
 .brand-copy small { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
 .nav-links { display: grid; gap: 3px; }
@@ -224,6 +229,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 9px; height: 9px; display: inline-block; border-radius: 50%; background: var(--accent); }
 .legend i.b { background: var(--series-b); }
+.legend i.dry { background: var(--amber); }
+.legend i.wet { background: var(--series-b); }
 .legend i.muted { background: var(--neutral-mark); }
 .legend i.ring { background: transparent; border: 2px solid var(--neutral-mark); }
 .legend i.bar-key { border-radius: 2px; }
@@ -250,6 +257,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .weather-metrics span { display: grid; gap: 4px; padding: 10px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 .weather-metrics span + span { border-left: 1px solid var(--border); }
 .weather-metrics b { color: var(--text); font-size: 15px; letter-spacing: 0; text-transform: none; }
+.weather-dot { stroke: var(--surface); stroke-width: 1.5; }
+.weather-dot.dry { fill: var(--amber); }
+.weather-dot.wet { fill: var(--series-b); }
+.weather-bar.dry { fill: var(--amber); }
+.weather-bar.wet { fill: var(--series-b); }
+.weather-method-note p { max-width: 980px; margin: 2px 0 0; color: var(--muted); line-height: 1.65; font-size: 13px; }
 
 /* Sources */
 .source-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-bottom: 18px; }
@@ -311,7 +324,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 @media (max-width: 1040px) {
   .app-shell { grid-template-columns: 76px minmax(0, 1fr); }
   .sidebar { padding: 20px 10px; }
-  .brand-copy, .nav-link span:last-child, .sidebar-foot { display: none; }
+  .brand-logo-wrap, .brand-copy, .nav-link span:last-child, .sidebar-foot { display: none; }
+  .brand-mark-compact { display: grid; }
   .brand { justify-content: center; padding: 4px; }
   .nav-link { justify-content: center; }
   .nav-link.active::before { left: -10px; }

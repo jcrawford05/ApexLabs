@@ -9,9 +9,14 @@ A static D3 dashboard for the Kaggle **Formula 1 World Championship (1950–2024
 - **Drivers** — every driver in the data set, career span defaults, eight career measures (points, wins, podiums, starts, average finish, positions gained, DNF rate, best season rank), points trend, finish distribution, and a sortable season table.
 - **Circuits** — races hosted, most wins, fastest race lap, wins from pole, average and fastest lap trend, winners chart, and race history.
 - **Constructors** — points, wins, podiums, entries, points per entry, DNF rate, best season rank, points trend, reliability chart with the period average, and a sortable season table.
+- **Weather Impact** — constructor-level normalized lap pace versus precipitation and temperature, wet/dry pace and DNF comparisons, filters, and a sortable sample table. It is designed for car-performance exploration rather than driver ranking.
 - **Sources** — citations for the core Formula 1 and weather datasets, plus notes on the dashboard’s weather join and historical-data limits.
 
 All pages cover every season in the data, have light and dark themes (following the system setting until toggled), and work down to phone width.
+
+## Branding assets
+
+The sidebar uses `site/assets/images/apex-labs-logo-light.png` in light mode and `site/assets/images/apex-labs-logo-dark.png` in dark mode. The dark version keeps the race-car mark red while rendering the Apex Labs wording in white.
 
 ## Add the Kaggle data
 
@@ -39,7 +44,7 @@ Then use any of these:
    ```bash
    python scripts/build_standalone.py --site-dir site --output apex-labs-dashboard.html
    ```
-   This inlines the CSS, D3, data, and all five pages into a single HTML file (about 6–9 MB with the full Kaggle data).
+   This inlines the CSS, D3, data, and all dashboard pages into a single HTML file (about 6–9 MB with the full Kaggle data).
 
 ## Preview without the Kaggle data
 

@@ -12,7 +12,9 @@ import csv
 import json
 from collections import defaultdict
 from datetime import datetime, timezone
+from math import ceil
 from pathlib import Path
+from statistics import median
 
 # Every JSON file the dashboard loads. data.js bundles the same payloads so the
 # site also works when an HTML file is opened straight from disk.
@@ -20,7 +22,7 @@ from pathlib import Path
 # so the script works no matter which directory it is run from.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-OUTPUT_FILES = ["metadata", "results", "race_metrics", "driver_seasons", "constructor_seasons", "circuit_summary", "qualifying", "sprint_results"]
+OUTPUT_FILES = ["metadata", "results", "race_metrics", "driver_seasons", "constructor_seasons", "circuit_summary", "qualifying", "sprint_results", "weather_impact"]
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -174,6 +176,7 @@ def main() -> None:
 
     lap_aggregates: dict[int, dict[str, int]] = defaultdict(lambda: {"totalMs": 0, "count": 0})
     driver_lap_aggregates: dict[tuple[int, int], dict[str, int]] = defaultdict(lambda: {"totalMs": 0, "count": 0})
+    driver_lap_values: dict[tuple[int, int], list[int]] = defaultdict(list)
     for row in lap_times:
         race_id = integer(row.get("raceId"))
         milliseconds = integer(row.get("milliseconds"))
@@ -181,9 +184,11 @@ def main() -> None:
             continue
         lap_aggregates[race_id]["totalMs"] += milliseconds
         lap_aggregates[race_id]["count"] += 1
-        driver_laps = driver_lap_aggregates[(race_id, integer(row.get("driverId")))]
+        driver_id = integer(row.get("driverId"))
+        driver_laps = driver_lap_aggregates[(race_id, driver_id)]
         driver_laps["totalMs"] += milliseconds
         driver_laps["count"] += 1
+        driver_lap_values[(race_id, driver_id)].append(milliseconds)
 
     enriched_results: list[dict] = []
     race_results: dict[int, list[dict]] = defaultdict(list)
@@ -283,6 +288,68 @@ def main() -> None:
         if key in circuit_summary:
             circuit_summary[key]["races"] += 1
 
+    # Constructor-level pace uses each driver's median among their fastest 25%
+    # of recorded laps. This limits the influence of pit, safety-car, and traffic
+    # laps while preserving a race-specific pace measure.
+    weather_impact = []
+    for race_id, entries in race_results.items():
+        race = race_lookup.get(race_id)
+        if not race or not race["weather"]["available"]:
+            continue
+        teams: dict[int, list[dict]] = defaultdict(list)
+        team_entries: dict[int, list[dict]] = defaultdict(list)
+        for entry in entries:
+            team_entries[entry["constructorId"]].append(entry)
+            lap_values = driver_lap_values.get((race_id, entry["driverId"]), [])
+            if not lap_values:
+                continue
+            fastest_lap_count = max(1, ceil(len(lap_values) * 0.25))
+            representative_lap_ms = round(median(sorted(lap_values)[:fastest_lap_count]))
+            teams[entry["constructorId"]].append({
+                "averageLapMs": entry["averageLapMs"],
+                "representativeLapMs": representative_lap_ms,
+                "lapSamples": entry["lapSamples"],
+                "dnf": entry["position"] == 0,
+            })
+
+        team_rows = []
+        for constructor_id, driver_rows in teams.items():
+            result_entries = team_entries[constructor_id]
+            driver_average_laps = [item["averageLapMs"] for item in driver_rows if item["averageLapMs"]]
+            team_rows.append({
+                "raceId": race_id,
+                "year": race["year"],
+                "round": race["round"],
+                "date": race["date"],
+                "raceName": race["name"],
+                "circuitId": race["circuitId"],
+                "circuitName": race["circuitName"],
+                "country": race["country"],
+                "constructorId": constructor_id,
+                "condition": race["weather"]["condition"],
+                "temperatureC": race["weather"]["temperatureC"],
+                "precipitationMm": race["weather"]["precipitationMm"],
+                "windSpeed": race["weather"]["windSpeed"],
+                "observedAt": race["weather"]["observedAt"],
+                "teamAverageLapMs": round(sum(driver_average_laps) / len(driver_average_laps)) if driver_average_laps else None,
+                "representativeLapMs": round(sum(item["representativeLapMs"] for item in driver_rows) / len(driver_rows)),
+                "lapSamples": sum(item["lapSamples"] for item in driver_rows),
+                "driverCount": len(driver_rows),
+                # Reliability uses every classified result entry, including a
+                # car that retired before recording a usable timing lap.
+                "dnfCount": sum(item["position"] == 0 for item in result_entries),
+                "entryCount": len(result_entries),
+            })
+
+        if not team_rows:
+            continue
+        fastest_team_pace = min(item["representativeLapMs"] for item in team_rows)
+        for item in team_rows:
+            item["fastestTeamPaceMs"] = fastest_team_pace
+            item["paceGapMs"] = item["representativeLapMs"] - fastest_team_pace
+            item["paceGapPercent"] = round(100 * item["paceGapMs"] / fastest_team_pace, 3)
+            weather_impact.append(item)
+
     qualifying_entries = [{
         "raceId": integer(row.get("raceId")), "driverId": integer(row.get("driverId")),
         "constructorId": integer(row.get("constructorId")), "position": integer(row.get("position")),
@@ -312,6 +379,7 @@ def main() -> None:
         "circuit_summary": list(circuit_summary.values()),
         "qualifying": qualifying_entries,
         "sprint_results": sprint_entries,
+        "weather_impact": weather_impact,
     }
     assert list(payloads) == OUTPUT_FILES
     for name, payload in payloads.items():
