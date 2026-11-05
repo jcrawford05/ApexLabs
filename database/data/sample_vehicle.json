@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "name": "Low Drag Monza Setup",
+  "regulation": "Apex 2026 Default",
+  "setup": {
+    "front_wing_angle_deg": 8.0,
+    "rear_wing_angle_deg": 12.0,
+    "front_ride_height_mm": 31.0,
+    "floor_load_pct": 62.0,
+    "ballast_kg": 5.0,
+    "tire_pressure_front_psi": 22.5,
+    "tire_pressure_rear_psi": 21.8
+  },
+  "components": {
+    "aero": {
+      "name": "Low Downforce Package",
+      "cost_usd": 1200000,
+      "mass_kg": 18.0,
+      "properties": { "drag_area_m2": 1.10, "lift_area_m2": -2.9, "aero_balance_front": 0.42 }
+    },
+    "engine": {
+      "name": "V6 Hybrid Spec B",
+      "cost_usd": 9500000,
+      "mass_kg": 150.0,
+      "properties": { "peak_power_kw": 745, "max_rpm": 15000 }
+    },
+    "tire": {
+      "name": "Medium Compound",
+      "cost_usd": 2500,
+      "mass_kg": 46.0,
+      "properties": { "peak_grip_coeff": 1.65, "optimal_temp_c": 100, "wear_rate_per_km": 0.0025 }
+    },
+    "chassis": {
+      "name": "Standard Monocoque",
+      "cost_usd": 4000000,
+      "mass_kg": 540.0,
+      "properties": { "wheelbase_m": 3.6, "cg_height_m": 0.30 }
+    },
+    "brakes": {
+      "name": "Carbon Disc Set",
+      "cost_usd": 250000,
+      "mass_kg": 40.0,
+      "properties": { "max_decel_g": 5.0 }
+    }
+  }
+}
