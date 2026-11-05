@@ -5,6 +5,7 @@
 // c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
 
 #include <cstdio>
+#include <string>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -12,11 +13,15 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+#include "app.h"
+#include "theme.h"
 
 namespace {
 
-constexpr int kWindowWidth = 960;
-constexpr int kWindowHeight = 640;
+constexpr int kWindowWidth = 1440;
+constexpr int kWindowHeight = 900;
+constexpr int kMinimumWindowWidth = 1280;
+constexpr int kMinimumWindowHeight = 760;
 
 void Shutdown(SDL_Window* window, SDL_Renderer* renderer) {
     ImGui_ImplSDLRenderer3_Shutdown();
@@ -45,6 +50,10 @@ int main(int, char**) {
         SDL_Quit();
         return 1;
     }
+    SDL_SetWindowMinimumSize(
+        window,
+        kMinimumWindowWidth,
+        kMinimumWindowHeight);
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
@@ -83,6 +92,27 @@ int main(int, char**) {
         return 1;
     }
 
+    const char* base_path = SDL_GetBasePath();
+    const std::string base_directory = base_path ? base_path : "";
+    float pixel_scale = SDL_GetWindowPixelDensity(window);
+    if (pixel_scale <= 0) {
+        pixel_scale = 1;
+    }
+    if (!theme::LoadFonts(base_directory + "assets/fonts", pixel_scale)) {
+        std::fprintf(stderr, "Apex Lab fonts could not be loaded.\n");
+        Shutdown(window, renderer);
+        return 1;
+    }
+    theme::ApplyStyle();
+
+    App app;
+    std::string error;
+    if (!app.Init(renderer, base_directory, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        Shutdown(window, renderer);
+        return 1;
+    }
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -106,18 +136,7 @@ int main(int, char**) {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::SetNextWindowPos(ImVec2(32.0F, 32.0F), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(440.0F, 210.0F), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Apex Lab");
-        ImGui::TextUnformatted("Apex Lab");
-        ImGui::TextUnformatted("Desktop UI Prototype");
-        ImGui::Spacing();
-        ImGui::TextUnformatted("SDL3 + Dear ImGui initialized successfully");
-        ImGui::Spacing();
-        if (ImGui::Button("Close")) {
-            running = false;
-        }
-        ImGui::End();
+        app.Frame();
 
         ImGui::Render();
         SDL_SetRenderScale(
@@ -128,8 +147,12 @@ int main(int, char**) {
         SDL_RenderClear(renderer);
         ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
         SDL_RenderPresent(renderer);
+        if (app.request_quit) {
+            running = false;
+        }
     }
 
+    app.Shutdown();
     Shutdown(window, renderer);
     return 0;
 }
