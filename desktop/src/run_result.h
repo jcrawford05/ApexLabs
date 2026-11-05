@@ -55,10 +55,22 @@ struct RunResult {
     Telemetry telemetry;
 };
 
+// One row of run history for Import / Export (and later Compare).
+struct RunSummary {
+    int run_id = 0;
+    std::string date;
+    std::string vehicle_name;
+    std::string track_name;
+    std::string weather_preset;
+    float lap_time_s = 0.0F;
+};
+
 RunResult MakeSampleRun();
 void AttachSampleTelemetry(RunResult& run);
+std::vector<RunSummary> MakeSampleHistory();
 
 std::string FormatLapTime(float seconds);  // 1:18.432
 std::string FormatDelta(float seconds);    // +0.22 s, −0.08 s, ±0.00 s
 std::string FormatSpeed(float kmh, bool with_unit = true);
 std::string FormatTemp(float celsius);
+std::string FileSlug(const std::string& name);

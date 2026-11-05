@@ -2,12 +2,33 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+
+#include <SDL3/SDL.h>
 
 #include "imgui.h"
 #include "theme.h"
 #include "widgets.h"
 
 namespace {
+
+std::string NowLabel() {
+    SDL_Time time = 0;
+    SDL_DateTime date_time{};
+    if (!SDL_GetCurrentTime(&time) || !SDL_TimeToDateTime(time, &date_time, true)) {
+        return "";
+    }
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "%02d:%02d", date_time.hour, date_time.minute);
+    return buffer;
+}
+
+void LogActivity(App& app, const std::string& text, bool ok) {
+    app.import_log.insert(app.import_log.begin(), {text, ok, NowLabel()});
+    if (app.import_log.size() > 32) {
+        app.import_log.resize(32);
+    }
+}
 
 const char* ScreenTitle(Screen screen) {
     switch (screen) {
@@ -60,9 +81,18 @@ void DrawPlaceholderScreen(App& app) {
 }  // namespace
 
 bool App::Init(
+    SDL_Window* app_window,
     SDL_Renderer* renderer,
     const std::string& base_directory,
     std::string& error) {
+    window = app_window;
+    import_event = SDL_RegisterEvents(1);
+    if (import_event == static_cast<uint32_t>(static_cast<Sint32>(-1))) {
+        error = "Could not register the Import file-dialog event.";
+        window = nullptr;
+        return false;
+    }
+
     const std::string images = base_directory + "assets/images/";
     logo_wordmark = LoadImage(renderer, images + "logo_wordmark.png");
     logo_badge = LoadImage(renderer, images + "logo_badge.png");
@@ -114,6 +144,8 @@ void App::Frame() {
             DrawResultsScreen(*this);
             break;
         case Screen::ImportExport:
+            DrawImportExportScreen(*this);
+            break;
         case Screen::Compare:
         case Screen::Settings:
             DrawPlaceholderScreen(*this);
@@ -187,6 +219,72 @@ void App::ShowToast(const std::string& text, double seconds) {
 void App::SaveSetup() {
     saved_vehicle = vehicle;
     ShowToast("Setup saved.");
+}
+
+std::string App::ExportFolder() const {
+    char* path = SDL_GetPrefPath("ApexLabs", "ApexLabs");
+    if (!path) {
+        return {};
+    }
+    std::string folder = path;
+    SDL_free(path);
+    return folder;
+}
+
+void App::ExportRunJson() {
+    char name[64];
+    std::snprintf(name, sizeof(name), "run_%d.json", run.run_id);
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, std::string("Export of ") + name + " isn't connected yet.", false);
+}
+
+void App::ExportCarJson() {
+    const std::string name = FileSlug(vehicle.name) + ".json";
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, "Export of " + name + " isn't connected yet.", false);
+}
+
+void App::ExportTrackJson() {
+    const std::string name = FileSlug(track.name) + ".json";
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, "Export of " + name + " isn't connected yet.", false);
+}
+
+void App::ImportFile(const std::string& path) {
+    const std::string file = path.substr(path.find_last_of("/\\") + 1);
+    ShowToast("Picked " + file + " — JSON parsing not yet implemented.", 4.0);
+    LogActivity(*this, file + ": JSON parsing not yet implemented.", false);
+}
+
+void App::OpenImportDialog() {
+    static const SDL_DialogFileFilter filters[] = {
+        {"Apex Labs JSON", "json"},
+    };
+    if (import_event == 0) {
+        ShowToast("Couldn't open the file picker.");
+        return;
+    }
+
+    // Callback may run on another thread: only copy the path and push an event.
+    SDL_ShowOpenFileDialog(
+        [](void* userdata, const char* const* files, int /*filter*/) {
+            if (!files || !files[0]) {
+                return;
+            }
+            SDL_Event event{};
+            event.type = *static_cast<Uint32*>(userdata);
+            event.user.data1 = SDL_strdup(files[0]);
+            if (!event.user.data1) {
+                return;
+            }
+            SDL_PushEvent(&event);
+        },
+        &import_event,
+        window,
+        filters,
+        1,
+        nullptr,
+        false);
 }
 
 void DrawTopNav(App& app, const char* right_label) {

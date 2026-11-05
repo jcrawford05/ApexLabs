@@ -58,6 +58,7 @@ struct SetupPreferences {
     float telemetry_spacing_m = 5.0F;
     float neutral_band_s = 0.05F;
     bool show_section_numbers = true;
+    bool telemetry_in_exports = false;
 };
 
 Track MakeDemoCircuit();

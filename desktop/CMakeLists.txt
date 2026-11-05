@@ -17,11 +17,11 @@ include(FetchContent)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
-# This foundation needs only SDL's event, video, and renderer paths. Keeping
-# unrelated subsystems out reduces compile time and generated build size.
+# This foundation needs SDL's event, video, renderer, and native file-dialog
+# paths. Keeping unrelated subsystems out reduces compile time and build size.
 set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
 set(SDL_CAMERA OFF CACHE BOOL "" FORCE)
-set(SDL_DIALOG OFF CACHE BOOL "" FORCE)
+set(SDL_DIALOG ON CACHE BOOL "" FORCE)
 set(SDL_GPU OFF CACHE BOOL "" FORCE)
 set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
 set(SDL_HIDAPI OFF CACHE BOOL "" FORCE)
@@ -64,7 +64,9 @@ add_executable(apex_lab_desktop
   src/app.cpp
   src/main.cpp
   src/run_result.cpp
+  src/sample_history.cpp
   src/sample_telemetry.cpp
+  src/screens/import_export_screen.cpp
   src/screens/results_screen.cpp
   src/screens/setup_screen.cpp
   src/screens/start_screen.cpp
