@@ -63,9 +63,13 @@ target_link_libraries(apex_imgui PUBLIC SDL3::SDL3)
 add_executable(apex_lab_desktop
   src/app.cpp
   src/main.cpp
+  src/screens/setup_screen.cpp
   src/screens/start_screen.cpp
   src/theme.cpp
   src/textures.cpp
+  src/track_map.cpp
+  src/track_setup.cpp
+  src/vehicle.cpp
   src/widgets.cpp)
 target_include_directories(apex_lab_desktop PRIVATE src third_party)
 target_link_libraries(apex_lab_desktop PRIVATE apex_imgui)

@@ -23,10 +23,10 @@ constexpr FontFile kFiles[] = {
 };
 
 const std::map<Face, std::vector<float>> kSizes = {
-    {Face::SpaceBold, {15, 24}},
+    {Face::SpaceBold, {15, 17, 18, 24}},
     {Face::SpaceMedium, {18}},
-    {Face::PlexRegular, {11, 14}},
-    {Face::PlexSemiBold, {14, 20}},
+    {Face::PlexRegular, {8, 9, 10, 11, 13, 14}},
+    {Face::PlexSemiBold, {9, 10, 11, 12, 13, 14, 20}},
 };
 
 std::map<std::pair<Face, int>, ImFont*> g_fonts;
@@ -114,9 +114,9 @@ void ApplyStyle() {
     style.FramePadding = ImVec2(12, 9);
     style.PopupRounding = 8;
     style.PopupBorderSize = 1;
-    style.ItemSpacing = ImVec2(8, 8);
-    style.ScrollbarSize = 10;
-    style.ScrollbarRounding = 6;
+    style.ItemSpacing = ImVec2(6, 6);
+    style.ScrollbarSize = 8;
+    style.ScrollbarRounding = 8;
     style.AntiAliasedLines = true;
     style.AntiAliasedFill = true;
 
@@ -133,6 +133,10 @@ void ApplyStyle() {
     colors[ImGuiCol_Button] = ToVec4(kRed);
     colors[ImGuiCol_ButtonHovered] = ToVec4(Hex(0xF2160F));
     colors[ImGuiCol_ButtonActive] = ToVec4(kRedDark);
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0, 0, 0, 0);
+    colors[ImGuiCol_ScrollbarGrab] = ToVec4(Hex(0x2A2E35));
+    colors[ImGuiCol_ScrollbarGrabHovered] = ToVec4(Hex(0x3A3E46));
+    colors[ImGuiCol_ScrollbarGrabActive] = ToVec4(Hex(0x4A4E56));
     colors[ImGuiCol_NavHighlight] = ToVec4(kRed);
 }
 
