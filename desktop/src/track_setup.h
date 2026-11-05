@@ -62,6 +62,7 @@ struct SetupPreferences {
 
 Track MakeDemoCircuit();
 const char* WeatherPresetName(WeatherPreset preset);
+const char* SegmentTypeName(SegmentType type);
 
 // Sample Run #42 lap time used by Surface estimates until results data loads.
 inline constexpr float kSampleLapTimeS = 78.432F;

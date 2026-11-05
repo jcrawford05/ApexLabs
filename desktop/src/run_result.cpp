@@ -26,7 +26,6 @@ RunResult MakeSampleRun() {
     run.sector_deltas_s[0] = 0.11F;
     run.sector_deltas_s[1] = 0.13F;
     run.sector_deltas_s[2] = -0.02F;
-    run.telemetry.spacing_m = 5.0F;
     run.sections = {
         {
             1,
@@ -188,6 +187,7 @@ RunResult MakeSampleRun() {
             {},
         },
     };
+    AttachSampleTelemetry(run);
     return run;
 }
 

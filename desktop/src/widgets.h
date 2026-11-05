@@ -18,6 +18,12 @@ void TextAt(
     float size,
     ImU32 color,
     const char* text);
+void TextWrapped(
+    Face face,
+    float size,
+    ImU32 color,
+    const char* text,
+    float wrap_width = 0.0F);
 void KeyValue(
     const char* key,
     const char* value,
@@ -53,6 +59,7 @@ void IconWeather(
     ImVec2 top_left,
     float scale,
     bool rain);
+void IconClose(ImDrawList* draw_list, ImVec2 center, float size, ImU32 color);
 
 struct PillStyle {
     float pad_x = 10.0F;

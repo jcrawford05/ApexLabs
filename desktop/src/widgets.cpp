@@ -55,6 +55,30 @@ void Text(Face face, float size, ImU32 color, const char* text) {
     ImGui::Dummy(measured);
 }
 
+void TextWrapped(
+    Face face,
+    float size,
+    ImU32 color,
+    const char* text,
+    float wrap_width) {
+    if (wrap_width <= 0.0F) {
+        wrap_width = ImGui::GetContentRegionAvail().x;
+    }
+    ImFont* font = theme::Font(face, size);
+    const float line_height = theme::LineHeight(face, size);
+    const ImVec2 measured =
+        font->CalcTextSizeA(line_height, FLT_MAX, wrap_width, text);
+    DrawList()->AddText(
+        font,
+        line_height,
+        ImGui::GetCursorScreenPos(),
+        color,
+        text,
+        nullptr,
+        wrap_width);
+    ImGui::Dummy(ImVec2(wrap_width, measured.y));
+}
+
 void KeyValue(
     const char* key,
     const char* value,
@@ -292,6 +316,20 @@ void IconWeather(
                 2.0F * scale);
         }
     }
+}
+
+void IconClose(ImDrawList* draw_list, ImVec2 center, float size, ImU32 color) {
+    const float half = size * 0.5F;
+    draw_list->AddLine(
+        ImVec2(center.x - half, center.y - half),
+        ImVec2(center.x + half, center.y + half),
+        color,
+        1.4F);
+    draw_list->AddLine(
+        ImVec2(center.x - half, center.y + half),
+        ImVec2(center.x + half, center.y - half),
+        color,
+        1.4F);
 }
 
 bool Pill(

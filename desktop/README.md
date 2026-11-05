@@ -57,11 +57,10 @@ The application opens a resizable window titled **Apex Lab**.
 The Start Screen provides navigation to the current desktop destinations.
 Car & Track Setup is migrated for its four-column configuration UI: all five
 car panels, all four track panels, Run Simulation, Previous/Next stepping,
-and in-memory Reset/Save Setup. Results shows the overview shell for sample
-Run #42 (header, SAMPLE badge, action stubs, and KPI row); the interactive
-track map, section table, telemetry chart, and section popup are still to
-come. Import / Export, Comparison, and Settings still show migration
-placeholders.
+and in-memory Reset/Save Setup. Results is migrated against sample Run #42:
+header and KPIs, interactive track map with coloring modes, section times
+table, telemetry chart, and section detail popup. Import / Export,
+Comparison, and Settings still show migration placeholders.
 
 ## Current scope
 
@@ -76,14 +75,15 @@ This phase contains only:
 - A Car & Track Setup shell with top nav, four-column layout, and category cards
 - All car and track setup panels with lean in-memory setup state
 - Demo Circuit map geometry and sample track / weather defaults
-- Results overview shell fed by embedded sample Run #42 (no physics yet)
+- Results fed by embedded sample Run #42 (map, section table, telemetry chart,
+  section popup; no physics yet)
 - The Results / app color palette and app-palette Button / Chip (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
 - Explicit placeholders for screens that have not yet been migrated
 - Ordered ImGui, renderer, window, and SDL cleanup
 
-It does **not** yet include JSON load/save, physics, the full Results map /
-table / chart / popup, or the broader data set from the team prototype.
+It does **not** yet include JSON load/save, physics, or the broader data set
+from the team prototype.
 
 ## Provenance
 
@@ -98,6 +98,6 @@ adapted from the existing team development workspace:
   and the setup / run-result subset of `src/data.*`
 
 Only the Start Screen, the full Car & Track Setup configuration UI, the
-Results overview shell, and the minimum support code they require were
-ported. Existing source authorship is preserved through this reference; this
-phase does not claim the full frontend has been migrated.
+Results screen, and the minimum support code they require were ported.
+Existing source authorship is preserved through this reference; this phase
+does not claim the full frontend has been migrated.

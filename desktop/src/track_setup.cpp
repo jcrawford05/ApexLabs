@@ -89,3 +89,15 @@ const char* WeatherPresetName(WeatherPreset preset) {
     }
     return "Dry";
 }
+
+const char* SegmentTypeName(SegmentType type) {
+    switch (type) {
+        case SegmentType::Straight:
+            return "Straight";
+        case SegmentType::Braking:
+            return "Braking";
+        case SegmentType::Corner:
+            return "Corner";
+    }
+    return "";
+}
