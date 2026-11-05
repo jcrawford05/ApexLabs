@@ -2,12 +2,33 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+
+#include <SDL3/SDL.h>
 
 #include "imgui.h"
 #include "theme.h"
 #include "widgets.h"
 
 namespace {
+
+std::string NowLabel() {
+    SDL_Time time = 0;
+    SDL_DateTime date_time{};
+    if (!SDL_GetCurrentTime(&time) || !SDL_TimeToDateTime(time, &date_time, true)) {
+        return "";
+    }
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "%02d:%02d", date_time.hour, date_time.minute);
+    return buffer;
+}
+
+void LogActivity(App& app, const std::string& text, bool ok) {
+    app.import_log.insert(app.import_log.begin(), {text, ok, NowLabel()});
+    if (app.import_log.size() > 32) {
+        app.import_log.resize(32);
+    }
+}
 
 const char* ScreenTitle(Screen screen) {
     switch (screen) {
@@ -114,6 +135,8 @@ void App::Frame() {
             DrawResultsScreen(*this);
             break;
         case Screen::ImportExport:
+            DrawImportExportScreen(*this);
+            break;
         case Screen::Compare:
         case Screen::Settings:
             DrawPlaceholderScreen(*this);
@@ -187,6 +210,46 @@ void App::ShowToast(const std::string& text, double seconds) {
 void App::SaveSetup() {
     saved_vehicle = vehicle;
     ShowToast("Setup saved.");
+}
+
+std::string App::ExportFolder() const {
+    char* path = SDL_GetPrefPath("ApexLabs", "ApexLabs");
+    if (!path) {
+        return {};
+    }
+    std::string folder = path;
+    SDL_free(path);
+    return folder;
+}
+
+void App::ExportRunJson() {
+    char name[64];
+    std::snprintf(name, sizeof(name), "run_%d.json", run.run_id);
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, std::string("Export of ") + name + " isn't connected yet.", false);
+}
+
+void App::ExportCarJson() {
+    const std::string name = FileSlug(vehicle.name) + ".json";
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, "Export of " + name + " isn't connected yet.", false);
+}
+
+void App::ExportTrackJson() {
+    const std::string name = FileSlug(track.name) + ".json";
+    ShowToast("JSON export isn't connected yet.");
+    LogActivity(*this, "Export of " + name + " isn't connected yet.", false);
+}
+
+void App::ImportFile(const std::string& path) {
+    const std::string file = path.substr(path.find_last_of("/\\") + 1);
+    ShowToast("JSON import isn't connected yet.", 4.0);
+    LogActivity(*this, file + ": JSON import isn't connected yet.", false);
+}
+
+void App::OpenImportDialog() {
+    ShowToast("File picker lands with JSON import.");
+    LogActivity(*this, "File picker isn't connected yet.", false);
 }
 
 void DrawTopNav(App& app, const char* right_label) {

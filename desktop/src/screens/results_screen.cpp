@@ -759,7 +759,7 @@ void DrawResultsScreen(App& app) {
         }
         ImGui::SetCursorScreenPos(ImVec2(x + w_compare + 10, p.y + 8.5f));
         if (ui::Button("##export", "Export JSON", ui::ButtonKind::Outline))
-            app.ShowToast("JSON export lands with Import / Export.");
+            app.ExportRunJson();
         ImGui::SetCursorScreenPos(ImVec2(x + w_compare + 10 + w_export + 10, p.y + 9.5f));
         if (ui::Button("##rerun", "Re-run simulation", ui::ButtonKind::Primary))
             app.ShowToast("The physics engine isn't connected yet.");

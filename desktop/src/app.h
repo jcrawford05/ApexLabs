@@ -1,7 +1,9 @@
 // Application state and navigation for migrated desktop screens.
 #pragma once
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #include "run_result.h"
 #include "textures.h"
@@ -40,6 +42,12 @@ enum class MapColoring { DeltaVsReference, Speed, ThrottleBrake };
 enum class TraceChannel { Speed, Throttle, Brake, TireTemp };
 
 struct App {
+    struct LogEntry {
+        std::string text;
+        bool ok = false;
+        std::string when;
+    };
+
     Screen screen = Screen::Start;
     CarPanel car_panel = CarPanel::Aerodynamics;
     TrackPanel track_panel = TrackPanel::Circuit;
@@ -54,6 +62,8 @@ struct App {
     SimulationSettings sim;
     SetupPreferences prefs;
     RunResult run = MakeSampleRun();
+    std::vector<RunSummary> history = MakeSampleHistory();
+    std::vector<LogEntry> import_log;
 
     MapColoring map_coloring = MapColoring::DeltaVsReference;
     TraceChannel trace_channel = TraceChannel::Speed;
@@ -79,9 +89,17 @@ struct App {
     void GoTo(Screen destination);
     void ShowToast(const std::string& text, double seconds = 3.0);
     void SaveSetup();
+
+    std::string ExportFolder() const;
+    void ExportRunJson();
+    void ExportCarJson();
+    void ExportTrackJson();
+    void ImportFile(const std::string& path);
+    void OpenImportDialog();
 };
 
 void DrawStartScreen(App& app);
 void DrawSetupScreen(App& app);
 void DrawResultsScreen(App& app);
+void DrawImportExportScreen(App& app);
 void DrawTopNav(App& app, const char* right_label);

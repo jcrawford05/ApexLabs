@@ -633,6 +633,45 @@ bool Button(
     return pressed;
 }
 
+bool Toggle(const char* id, bool* value) {
+    const ImVec2 size(40.0F, 22.0F);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    bool hovered = false;
+    const bool pressed = HitArea(id, size, &hovered);
+    SetHandCursorIfHovered();
+    if (pressed) {
+        *value = !*value;
+    }
+    ImGuiStorage* storage = ImGui::GetStateStorage();
+    const ImGuiID anim_id = ImGui::GetItemID();
+    float t = storage->GetFloat(anim_id, *value ? 1.0F : 0.0F);
+    const float target = *value ? 1.0F : 0.0F;
+    t += (target - t) * std::min(1.0F, ImGui::GetIO().DeltaTime * 18.0F);
+    if (std::fabs(target - t) < 0.01F) {
+        t = target;
+    }
+    storage->SetFloat(anim_id, t);
+    ImDrawList* draw_list = DrawList();
+    const ImU32 off =
+        hovered ? theme::Hex(0x45454D) : theme::app::kControlBorder;
+    const ImVec4 a = ImGui::ColorConvertU32ToFloat4(off);
+    const ImVec4 b = ImGui::ColorConvertU32ToFloat4(theme::kRed);
+    const ImVec4 mix(
+        a.x + (b.x - a.x) * t,
+        a.y + (b.y - a.y) * t,
+        a.z + (b.z - a.z) * t,
+        1.0F);
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        ImGui::ColorConvertFloat4ToU32(mix),
+        11.0F);
+    const float knob_x = position.x + 11.0F + t * 18.0F;
+    draw_list->AddCircleFilled(
+        ImVec2(knob_x, position.y + 11.0F), 8.0F, theme::kWhite, 24);
+    return pressed;
+}
+
 bool Chip(const char* id, const char* label, bool selected) {
     const ImVec2 text_size = TextSize(Face::PlexSemiBold, 12.0F, label);
     const ImVec2 size(text_size.x + 24.0F, text_size.y + 12.0F);
