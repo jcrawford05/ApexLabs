@@ -210,21 +210,23 @@ void DrawTopNav(App& app, const char* right_label) {
     };
     const Tab tabs[] = {
         {"Car Setup", Screen::CarSetup},
+        {"Results", Screen::Results},
         {"Import / Export", Screen::ImportExport},
         {"Comparison", Screen::Compare},
         {"Settings", Screen::Settings},
     };
+    constexpr int kTabCount = static_cast<int>(sizeof(tabs) / sizeof(tabs[0]));
 
     float total = 0.0F;
-    float widths[4];
-    for (int i = 0; i < 4; ++i) {
+    float widths[kTabCount];
+    for (int i = 0; i < kTabCount; ++i) {
         widths[i] =
             ui::TextSize(theme::Face::PlexSemiBold, 14, tabs[i].label).x + 4.0F;
         total += widths[i] + (i ? 28.0F : 0.0F);
     }
 
     float x = position.x + (width - total) * 0.5F;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < kTabCount; ++i) {
         const Tab& tab = tabs[i];
         const bool active = app.screen == tab.screen;
         ImGui::SetCursorScreenPos(ImVec2(x, position.y));
