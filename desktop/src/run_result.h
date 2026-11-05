@@ -5,6 +5,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 struct Effect {
@@ -55,14 +56,22 @@ struct RunResult {
     Telemetry telemetry;
 };
 
-// One row of run history for Import / Export (and later Compare).
+// One row of run history for Import / Export and Comparison.
 struct RunSummary {
     int run_id = 0;
     std::string date;
     std::string vehicle_name;
     std::string track_name;
     std::string weather_preset;
+    float air_c = 0.0F;
+    float track_c = 0.0F;
     float lap_time_s = 0.0F;
+    float top_speed_kmh = 0.0F;
+    float sector_times_s[3] = {};
+    std::vector<float> section_times_s;
+    std::vector<std::pair<std::string, std::string>> setup;
+    float telemetry_spacing_m = 5.0F;
+    std::vector<float> speed_kmh;
 };
 
 RunResult MakeSampleRun();

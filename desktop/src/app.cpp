@@ -147,6 +147,8 @@ void App::Frame() {
             DrawImportExportScreen(*this);
             break;
         case Screen::Compare:
+            DrawCompareScreen(*this);
+            break;
         case Screen::Settings:
             DrawPlaceholderScreen(*this);
             break;
@@ -285,6 +287,15 @@ void App::OpenImportDialog() {
         1,
         nullptr,
         false);
+}
+
+const RunSummary* App::FindRun(int run_id) const {
+    for (const RunSummary& summary : history) {
+        if (summary.run_id == run_id) {
+            return &summary;
+        }
+    }
+    return nullptr;
 }
 
 void DrawTopNav(App& app, const char* right_label) {

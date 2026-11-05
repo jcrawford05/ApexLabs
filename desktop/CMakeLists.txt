@@ -66,6 +66,7 @@ add_executable(apex_lab_desktop
   src/run_result.cpp
   src/sample_history.cpp
   src/sample_telemetry.cpp
+  src/screens/compare_screen.cpp
   src/screens/import_export_screen.cpp
   src/screens/results_screen.cpp
   src/screens/setup_screen.cpp

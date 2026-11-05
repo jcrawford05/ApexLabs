@@ -332,6 +332,16 @@ void IconClose(ImDrawList* draw_list, ImVec2 center, float size, ImU32 color) {
         1.4F);
 }
 
+void IconChevronDown(
+    ImDrawList* draw_list, ImVec2 center, float size, ImU32 color) {
+    const float half = size * 0.5F;
+    draw_list->AddTriangleFilled(
+        ImVec2(center.x - half, center.y - half * 0.45F),
+        ImVec2(center.x + half, center.y - half * 0.45F),
+        ImVec2(center.x, center.y + half * 0.55F),
+        color);
+}
+
 bool Pill(
     const char* id,
     const char* label,
@@ -670,6 +680,96 @@ bool Toggle(const char* id, bool* value) {
     draw_list->AddCircleFilled(
         ImVec2(knob_x, position.y + 11.0F), 8.0F, theme::kWhite, 24);
     return pressed;
+}
+
+bool Dropdown(
+    const char* id,
+    const char* const* items,
+    int count,
+    int* selected,
+    float width) {
+    ImGui::PushID(id);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const ImVec2 size(width, 38.0F);
+    bool hovered = false;
+    if (HitArea("##box", size, &hovered)) {
+        ImGui::OpenPopup("##list");
+    }
+    SetHandCursorIfHovered();
+    ImDrawList* draw_list = DrawList();
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        hovered ? theme::Hex(0x26262C) : theme::app::kRaised,
+        8.0F);
+    draw_list->AddRect(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        hovered ? theme::Hex(0x4A4A52) : theme::app::kControlBorder,
+        8.0F);
+    const char* label =
+        (*selected >= 0 && *selected < count) ? items[*selected] : "";
+    TextAt(
+        draw_list,
+        ImVec2(position.x + 13.0F, position.y + 11.0F),
+        Face::PlexSemiBold,
+        13.0F,
+        theme::app::kText,
+        label);
+    IconChevronDown(
+        draw_list,
+        ImVec2(position.x + size.x - 16.0F, position.y + 19.0F),
+        7.0F,
+        theme::app::kMuted);
+
+    bool changed = false;
+    ImGui::SetNextWindowPos(ImVec2(position.x, position.y + size.y + 4.0F));
+    ImGui::SetNextWindowSize(ImVec2(width, 0.0F));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 2));
+    if (ImGui::BeginPopup("##list")) {
+        for (int i = 0; i < count; ++i) {
+            const ImVec2 item_pos = ImGui::GetCursorScreenPos();
+            ImGui::PushID(i);
+            bool item_hovered = false;
+            if (HitArea("##item", ImVec2(width - 8.0F, 32.0F), &item_hovered)) {
+                if (*selected != i) {
+                    changed = true;
+                }
+                *selected = i;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImDrawList* popup_draw_list = ImGui::GetWindowDrawList();
+            if (item_hovered || i == *selected) {
+                popup_draw_list->AddRectFilled(
+                    item_pos,
+                    ImVec2(item_pos.x + width - 8.0F, item_pos.y + 32.0F),
+                    item_hovered ? theme::Hex(0x2E2E35) : theme::Hex(0x26262C),
+                    6.0F);
+            }
+            if (i == *selected) {
+                popup_draw_list->AddRectFilled(
+                    ImVec2(item_pos.x + 4.0F, item_pos.y + 9.0F),
+                    ImVec2(item_pos.x + 7.0F, item_pos.y + 23.0F),
+                    theme::kRed,
+                    2.0F);
+            }
+            TextAt(
+                popup_draw_list,
+                ImVec2(item_pos.x + 13.0F, item_pos.y + 8.0F),
+                Face::PlexSemiBold,
+                13.0F,
+                theme::app::kText,
+                items[i]);
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleVar(2);
+    ImGui::SetCursorScreenPos(position);
+    ImGui::Dummy(size);
+    ImGui::PopID();
+    return changed;
 }
 
 bool Chip(const char* id, const char* label, bool selected) {
