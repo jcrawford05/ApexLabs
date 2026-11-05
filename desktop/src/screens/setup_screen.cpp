@@ -1,10 +1,11 @@
-// Car & Track Setup shell migration from ApexLabsDevSpace commit
+// Car & Track Setup migration from ApexLabsDevSpace commit
 // c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0 (Figma 1440 x 900).
 //
-// First slice: top nav, page header, category lists, and empty detail panels.
-// Panel controls, vehicle data, and Run Simulation come in later slices.
+// Current slice: shell plus the Aerodynamics car panel. Remaining car/track
+// panels stay as placeholders until later slices.
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 
 #include "app.h"
 #include "imgui.h"
@@ -59,6 +60,55 @@ void EndPanel() {
     ImGui::EndChild();
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor(2);
+}
+
+void BeginGroup(const char* id, bool summary = false) {
+    ui::BeginCard(
+        id,
+        summary ? setup::kSummary : setup::kGroup,
+        summary ? setup::kSummaryBorder : setup::kGroupBorder,
+        9.0F,
+        ImVec2(12.0F, 12.0F));
+}
+
+void EndGroup() {
+    ui::EndCard();
+}
+
+void PanelHeader(
+    const char* title,
+    const char* subtitle,
+    const char* pill,
+    float title_size) {
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const float width = ImGui::GetContentRegionAvail().x;
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ui::TextAt(draw_list, position, Face::SpaceBold, title_size, setup::kTitle, title);
+    const float title_height = LineHeight(Face::SpaceBold, title_size);
+    if (pill) {
+        const float pill_width =
+            ui::TextSize(Face::PlexSemiBold, 10.0F, pill).x + 24.0F;
+        ImGui::SetCursorScreenPos(
+            ImVec2(position.x + width - pill_width, position.y + 4.5F));
+        ui::Pill("##headerpill", pill, true);
+    }
+    ImGui::SetCursorScreenPos(ImVec2(position.x, position.y + title_height + 3.0F));
+    ui::Text(Face::PlexRegular, 9.0F, setup::kMuted, subtitle);
+    ui::Space(13.0F);
+    ui::Divider(setup::kDivider);
+    ui::Space(13.0F);
+}
+
+void KV(const char* key, const char* value, bool accent = false) {
+    ui::KeyValue(
+        key,
+        value,
+        accent ? setup::kAccentValue : setup::kKvValue,
+        Face::PlexRegular,
+        10.0F,
+        Face::PlexSemiBold,
+        11.0F,
+        setup::kMuted);
 }
 
 void CategoryColumn(App& app, bool track, float card_width) {
@@ -126,10 +176,105 @@ const char* TrackPanelTitle(TrackPanel panel) {
     return "Track Setup";
 }
 
+void AerodynamicsPanel(App& app) {
+    Vehicle& vehicle = app.vehicle;
+    PanelHeader(
+        "Aerodynamics",
+        "Tune the car's high-speed efficiency and balance.",
+        vehicle.AeroBias(),
+        18.0F);
+
+    BeginGroup("##front");
+    ui::SectionLabel("FRONT AERO");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##fw",
+        "Front wing angle",
+        &vehicle.front_wing_deg,
+        2.0F,
+        15.0F,
+        "%.1f\xC2\xB0",
+        "2\xC2\xB0",
+        "15\xC2\xB0",
+        false,
+        0.5F);
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##frh",
+        "Front ride height",
+        &vehicle.front_ride_height_mm,
+        22.0F,
+        45.0F,
+        "%.0f mm",
+        "22 mm",
+        "45 mm",
+        false,
+        1.0F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##rear");
+    ui::SectionLabel("REAR / FLOOR");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##rw",
+        "Rear wing angle",
+        &vehicle.rear_wing_deg,
+        4.0F,
+        20.0F,
+        "%.1f\xC2\xB0",
+        "4\xC2\xB0",
+        "20\xC2\xB0",
+        false,
+        0.5F);
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##floor",
+        "Floor load",
+        &vehicle.floor_load_pct,
+        0.0F,
+        100.0F,
+        "%.0f%%",
+        "Low",
+        "High",
+        false,
+        1.0F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##aerosummary", true);
+    ui::Text(Face::PlexSemiBold, 9.0F, Hex(0x646B76), "CURRENT CONFIGURATION");
+    ui::Space(8.0F);
+    char mass[32];
+    std::snprintf(mass, sizeof(mass), "%.0f kg", vehicle.TotalMassKg());
+    KV("Mass", mass);
+    ui::Space(8.0F);
+    KV("Drag tendency", vehicle.DragTendency(), true);
+    EndGroup();
+}
+
+void DrawCarDetail(App& app) {
+    switch (app.car_panel) {
+        case CarPanel::Aerodynamics:
+            AerodynamicsPanel(app);
+            break;
+        case CarPanel::Tires:
+        case CarPanel::Powertrain:
+        case CarPanel::Chassis:
+        case CarPanel::Brakes:
+            DetailPlaceholder(
+                CarPanelTitle(app.car_panel),
+                "This panel will host the selected car setup controls.");
+            break;
+        case CarPanel::Count:
+            break;
+    }
+}
+
 }  // namespace
 
 void DrawSetupScreen(App& app) {
-    DrawTopNav(app, "New Configuration");
+    DrawTopNav(app, app.vehicle.name.c_str());
 
     const ImVec2 origin = ImGui::GetWindowPos();
     const ImVec2 window_size = ImGui::GetWindowSize();
@@ -152,7 +297,6 @@ void DrawSetupScreen(App& app) {
         Hex(0x737A84),
         "Configure the vehicle, select a circuit, then run the simulation.");
 
-    // Figma column widths 225 / 455 / 225 / 431 with 16 px gaps.
     constexpr float kDesign[4] = {225.0F, 455.0F, 225.0F, 431.0F};
     constexpr float kDesignTotal = 1336.0F;
     const float available = window_size.x - 48.0F - 48.0F;
@@ -171,9 +315,7 @@ void DrawSetupScreen(App& app) {
     x += widths[0] + 16.0F;
 
     BeginPanel("##cardetail", ImVec2(x, top), ImVec2(widths[1], height), ImVec2(17, 15));
-    DetailPlaceholder(
-        CarPanelTitle(app.car_panel),
-        "This panel will host the selected car setup controls.");
+    DrawCarDetail(app);
     EndPanel();
     x += widths[1] + 16.0F;
 

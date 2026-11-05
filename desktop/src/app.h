@@ -4,6 +4,7 @@
 #include <string>
 
 #include "textures.h"
+#include "vehicle.h"
 
 struct SDL_Renderer;
 
@@ -38,6 +39,8 @@ struct App {
     TrackPanel track_panel = TrackPanel::Circuit;
     bool track_focus = false;
     bool request_quit = false;
+
+    Vehicle vehicle;
 
     Image logo_wordmark;
     Image logo_badge;

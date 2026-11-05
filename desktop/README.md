@@ -56,8 +56,8 @@ The application opens a resizable window titled **Apex Lab**.
 
 The Start Screen provides navigation to the current desktop destinations.
 Car & Track Setup is partially migrated: top navigation, page header, category
-lists, and empty detail panels. Import / Export, Comparison, and Settings still
-show a migration placeholder with a **Back to Home** action.
+lists, and the Aerodynamics panel. Remaining car/track panels, Import / Export,
+Comparison, and Settings still show migration placeholders.
 
 ## Current scope
 
@@ -70,12 +70,13 @@ This phase contains only:
 - The Apex Lab color theme, custom fonts, and branded image loading
 - The migrated Start Screen and its responsive reference composition
 - A Car & Track Setup shell with top nav, four-column layout, and category cards
+- The Aerodynamics panel with lean in-memory vehicle setup state
 - Basic navigation to Car Setup, Import / Export, Comparison, and Settings
 - Explicit placeholders for screens and panels that have not yet been migrated
 - Ordered ImGui, renderer, window, and SDL cleanup
 
-It does **not** yet include car/track panel controls, vehicle data models,
-simulation logic, or JSON support from the team prototype.
+It does **not** yet include the remaining car/track panels, JSON load/save,
+simulation logic, or the broader data set from the team prototype.
 
 ## Provenance
 
@@ -85,9 +86,10 @@ adapted from the existing team development workspace:
 - Repository: `C:\Users\cesar\Documents\ApexLabsDevSpace`
 - Source commit: `c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0`
 - Source files: `src/main.cpp`, `src/app.cpp`, `src/screens/start_screen.cpp`,
-  `src/screens/setup_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`, and
-  `src/textures.cpp`
+  `src/screens/setup_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`,
+  `src/textures.cpp`, and the Aerodynamics-related subset of `src/data.*`
 
-Only the Start Screen, the Car & Track Setup shell, and the minimum support
-code they require were ported. Existing source authorship is preserved through
-this reference; this phase does not claim the full frontend has been migrated.
+Only the Start Screen, the Car & Track Setup shell, the Aerodynamics panel, and
+the minimum support code they require were ported. Existing source authorship
+is preserved through this reference; this phase does not claim the full
+frontend has been migrated.

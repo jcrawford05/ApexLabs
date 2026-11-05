@@ -242,6 +242,7 @@ void DrawStartScreen(App& app) {
             "Create a car setup from a clean baseline",
             MenuIcon::Plus,
             true)) {
+        app.vehicle = Vehicle{};
         app.car_panel = CarPanel::Aerodynamics;
         app.track_panel = TrackPanel::Circuit;
         app.track_focus = false;
