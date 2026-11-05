@@ -60,6 +60,8 @@ void IconWeather(
     float scale,
     bool rain);
 void IconClose(ImDrawList* draw_list, ImVec2 center, float size, ImU32 color);
+void IconChevronDown(
+    ImDrawList* draw_list, ImVec2 center, float size, ImU32 color);
 
 struct PillStyle {
     float pad_x = 10.0F;
@@ -105,6 +107,12 @@ bool Button(
     float pad_y = 10.0F);
 bool Chip(const char* id, const char* label, bool selected);
 bool Toggle(const char* id, bool* value);
+bool Dropdown(
+    const char* id,
+    const char* const* items,
+    int count,
+    int* selected,
+    float width);
 void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
 
 bool HitArea(

@@ -62,8 +62,9 @@ header and KPIs, interactive track map with coloring modes, section times
 table, telemetry chart, and section detail popup. Import / Export is
 migrated for its four-card layout (import drop zone, export rows, run
 history, activity log) against live setup/run state and sample history;
-JSON file I/O is still stubbed. Comparison and Settings still show
-migration placeholders.
+JSON file I/O is still stubbed. Comparison is migrated against sample run
+history (run pickers, gap KPIs, setup diffs, section gaps, speed/gap
+chart). Settings still shows a migration placeholder.
 
 ## Current scope
 
@@ -83,7 +84,8 @@ This phase contains only:
 - Import / Export UI with sample run history and session activity logging
 - Native Import file picker via SDL3 dialogs (Windows / macOS), plus drag-and-drop
   onto the window; JSON parse/apply is not connected yet
-- The Results / app color palette and app-palette Button / Chip / Toggle
+- Comparison Tool against sample run history
+- The Results / app color palette and app-palette Button / Chip / Toggle / Dropdown
   (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
 - Explicit placeholders for screens that have not yet been migrated
@@ -101,11 +103,11 @@ adapted from the existing team development workspace:
 - Source commit: `c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0`
 - Source files: `src/main.cpp`, `src/app.cpp`, `src/screens/start_screen.cpp`,
   `src/screens/setup_screen.cpp`, `src/screens/results_screen.cpp`,
-  `src/screens/import_export_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`,
-  `src/textures.cpp`, `src/track_map.*`, and the setup / run-result subset of
-  `src/data.*`
+  `src/screens/import_export_screen.cpp`, `src/screens/compare_screen.cpp`,
+  `src/widgets.cpp`, `src/theme.cpp`, `src/textures.cpp`, `src/track_map.*`,
+  and the setup / run-result subset of `src/data.*`
 
-Only the Start Screen, Car & Track Setup, Results, Import / Export, and the
-minimum support code they require were ported. Existing source authorship is
-preserved through this reference; this phase does not claim the full frontend
-has been migrated.
+Only the Start Screen, Car & Track Setup, Results, Import / Export,
+Comparison, and the minimum support code they require were ported. Existing
+source authorship is preserved through this reference; this phase does not
+claim the full frontend has been migrated.

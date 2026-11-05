@@ -100,10 +100,12 @@ struct App {
     void ExportTrackJson();
     void ImportFile(const std::string& path);
     void OpenImportDialog();
+    const RunSummary* FindRun(int run_id) const;
 };
 
 void DrawStartScreen(App& app);
 void DrawSetupScreen(App& app);
 void DrawResultsScreen(App& app);
 void DrawImportExportScreen(App& app);
+void DrawCompareScreen(App& app);
 void DrawTopNav(App& app, const char* right_label);
