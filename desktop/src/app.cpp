@@ -30,54 +30,6 @@ void LogActivity(App& app, const std::string& text, bool ok) {
     }
 }
 
-const char* ScreenTitle(Screen screen) {
-    switch (screen) {
-        case Screen::CarSetup:
-            return "Car Setup";
-        case Screen::Results:
-            return "Results";
-        case Screen::ImportExport:
-            return "Import / Export";
-        case Screen::Compare:
-            return "Comparison";
-        case Screen::Settings:
-            return "Settings";
-        case Screen::Start:
-            return "Start";
-    }
-    return "Apex Lab";
-}
-
-void DrawPlaceholderScreen(App& app) {
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    const ImVec2 origin = ImGui::GetWindowPos();
-    const ImVec2 size = ImGui::GetWindowSize();
-
-    draw_list->AddRectFilled(
-        origin,
-        ImVec2(origin.x + size.x, origin.y + 2.0F),
-        theme::kRed);
-    draw_list->AddText(
-        theme::Font(theme::Face::SpaceBold, 24),
-        theme::LineHeight(theme::Face::SpaceBold, 24),
-        ImVec2(origin.x + 64.0F, origin.y + 72.0F),
-        theme::kWhite,
-        ScreenTitle(app.screen));
-    draw_list->AddText(
-        theme::Font(theme::Face::PlexRegular, 14),
-        theme::LineHeight(theme::Face::PlexRegular, 14),
-        ImVec2(origin.x + 64.0F, origin.y + 118.0F),
-        theme::setup::kTagline,
-        "This screen has not yet been migrated.");
-
-    ImGui::SetCursorScreenPos(ImVec2(origin.x + 64.0F, origin.y + 164.0F));
-    ImGui::PushFont(theme::Font(theme::Face::PlexSemiBold, 14));
-    if (ImGui::Button("Back to Home", ImVec2(160.0F, 44.0F))) {
-        app.GoTo(Screen::Start);
-    }
-    ImGui::PopFont();
-}
-
 }  // namespace
 
 bool App::Init(
@@ -86,6 +38,7 @@ bool App::Init(
     const std::string& base_directory,
     std::string& error) {
     window = app_window;
+    saved_prefs = prefs;
     import_event = SDL_RegisterEvents(1);
     if (import_event == static_cast<uint32_t>(static_cast<Sint32>(-1))) {
         error = "Could not register the Import file-dialog event.";
@@ -150,7 +103,7 @@ void App::Frame() {
             DrawCompareScreen(*this);
             break;
         case Screen::Settings:
-            DrawPlaceholderScreen(*this);
+            DrawSettingsScreen(*this);
             break;
     }
     ImGui::End();

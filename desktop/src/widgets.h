@@ -114,6 +114,7 @@ bool Dropdown(
     int* selected,
     float width);
 void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
+void Badge(const char* text, ImU32 color);
 
 bool HitArea(
     const char* id,

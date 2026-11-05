@@ -804,6 +804,25 @@ void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color) 
     draw_list->AddCircleFilled(center, radius, color, 16);
 }
 
+void Badge(const char* text, ImU32 color) {
+    const ImVec2 text_size = TextSize(Face::PlexSemiBold, 10.0F, text);
+    const ImVec2 size(text_size.x + 14.0F, text_size.y + 6.0F);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    DrawList()->AddRect(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        color,
+        4.0F);
+    TextAt(
+        DrawList(),
+        ImVec2(position.x + 7.0F, position.y + 3.0F),
+        Face::PlexSemiBold,
+        10.0F,
+        color,
+        text);
+    ImGui::Dummy(size);
+}
+
 bool HitArea(const char* id, ImVec2 size, bool* hovered, bool* held) {
     const bool pressed = ImGui::InvisibleButton(
         id,

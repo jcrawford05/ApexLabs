@@ -69,6 +69,7 @@ add_executable(apex_lab_desktop
   src/screens/compare_screen.cpp
   src/screens/import_export_screen.cpp
   src/screens/results_screen.cpp
+  src/screens/settings_screen.cpp
   src/screens/setup_screen.cpp
   src/screens/start_screen.cpp
   src/theme.cpp

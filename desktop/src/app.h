@@ -61,7 +61,8 @@ struct App {
     Weather weather;
     SurfaceSettings surface;
     SimulationSettings sim;
-    SetupPreferences prefs;
+    Preferences prefs;
+    Preferences saved_prefs;
     RunResult run = MakeSampleRun();
     std::vector<RunSummary> history = MakeSampleHistory();
     std::vector<LogEntry> import_log;
@@ -108,4 +109,5 @@ void DrawSetupScreen(App& app);
 void DrawResultsScreen(App& app);
 void DrawImportExportScreen(App& app);
 void DrawCompareScreen(App& app);
+void DrawSettingsScreen(App& app);
 void DrawTopNav(App& app, const char* right_label);

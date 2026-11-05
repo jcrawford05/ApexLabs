@@ -64,7 +64,9 @@ migrated for its four-card layout (import drop zone, export rows, run
 history, activity log) against live setup/run state and sample history;
 JSON file I/O is still stubbed. Comparison is migrated against sample run
 history (run pickers, gap KPIs, setup diffs, section gaps, speed/gap
-chart). Settings still shows a migration placeholder.
+chart). Settings is migrated for its shell (section nav, group cards, About
+strip) plus live prefs with Save / Reset against the fields other screens
+already read; per-section controls still land in later slices.
 
 ## Current scope
 
@@ -85,10 +87,10 @@ This phase contains only:
 - Native Import file picker via SDL3 dialogs (Windows / macOS), plus drag-and-drop
   onto the window; JSON parse/apply is not connected yet
 - Comparison Tool against sample run history
-- The Results / app color palette and app-palette Button / Chip / Toggle / Dropdown
-  (shared Space / Plex fonts)
+- Settings shell with sticky section nav, Save / Reset, and unsaved-change chrome
+- The Results / app color palette and app-palette Button / Chip / Toggle /
+  Dropdown / Badge (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
-- Explicit placeholders for screens that have not yet been migrated
 - Ordered ImGui, renderer, window, and SDL cleanup
 
 It does **not** yet include JSON load/save, physics, or the broader data set
@@ -104,10 +106,11 @@ adapted from the existing team development workspace:
 - Source files: `src/main.cpp`, `src/app.cpp`, `src/screens/start_screen.cpp`,
   `src/screens/setup_screen.cpp`, `src/screens/results_screen.cpp`,
   `src/screens/import_export_screen.cpp`, `src/screens/compare_screen.cpp`,
-  `src/widgets.cpp`, `src/theme.cpp`, `src/textures.cpp`, `src/track_map.*`,
-  and the setup / run-result subset of `src/data.*`
+  `src/screens/settings_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`,
+  `src/textures.cpp`, `src/track_map.*`, and the setup / run-result subset of
+  `src/data.*`
 
 Only the Start Screen, Car & Track Setup, Results, Import / Export,
-Comparison, and the minimum support code they require were ported. Existing
-source authorship is preserved through this reference; this phase does not
-claim the full frontend has been migrated.
+Comparison, Settings (shell + prefs save model), and the minimum support code
+they require were ported. Existing source authorship is preserved through this
+reference; this phase does not claim the full frontend has been migrated.
