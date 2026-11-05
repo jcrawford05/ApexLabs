@@ -51,6 +51,18 @@ bool LoadFonts(const std::string& font_dir, float pixel_scale) {
     io.Fonts->Clear();
     g_fonts.clear();
 
+    // Latin-1 plus the few typographic symbols the copy uses.
+    static const ImWchar kRanges[] = {
+        0x0020, 0x00FF,  // Basic Latin + Latin-1 (° ± ·)
+        0x0394, 0x0394,  // Δ
+        0x2013, 0x2014,  // – —
+        0x2018, 0x201D,  // ‘ ’ “ ”
+        0x2026, 0x2026,  // …
+        0x2190, 0x2193,  // ← ↑ → ↓
+        0x2212, 0x2212,  // −
+        0,
+    };
+
     bool ok = true;
     for (const FontFile& font_file : kFiles) {
         const std::string path = font_dir + "/" + font_file.file;
@@ -61,7 +73,10 @@ bool LoadFonts(const std::string& font_dir, float pixel_scale) {
             config.PixelSnapH = false;
             std::snprintf(config.Name, sizeof(config.Name), "%s %.0fpx", font_file.file, size);
             ImFont* font = io.Fonts->AddFontFromFileTTF(
-                path.c_str(), size * font_file.line_ratio * pixel_scale, &config);
+                path.c_str(),
+                size * font_file.line_ratio * pixel_scale,
+                &config,
+                kRanges);
             if (!font) {
                 std::fprintf(stderr, "Could not load font %s\n", path.c_str());
                 ok = false;
