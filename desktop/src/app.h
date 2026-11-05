@@ -11,6 +11,7 @@
 #include "vehicle.h"
 
 struct SDL_Renderer;
+struct SDL_Window;
 
 enum class Screen {
     Start,
@@ -64,6 +65,8 @@ struct App {
     RunResult run = MakeSampleRun();
     std::vector<RunSummary> history = MakeSampleHistory();
     std::vector<LogEntry> import_log;
+    uint32_t import_event = 0;
+    SDL_Window* window = nullptr;
 
     MapColoring map_coloring = MapColoring::DeltaVsReference;
     TraceChannel trace_channel = TraceChannel::Speed;
@@ -81,6 +84,7 @@ struct App {
     Image track_line_right;
 
     bool Init(
+        SDL_Window* window,
         SDL_Renderer* renderer,
         const std::string& base_directory,
         std::string& error);

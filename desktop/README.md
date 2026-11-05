@@ -81,7 +81,8 @@ This phase contains only:
 - Results fed by embedded sample Run #42 (map, section table, telemetry chart,
   section popup; no physics yet)
 - Import / Export UI with sample run history and session activity logging
-  (JSON read/write and the system file picker are not connected yet)
+- Native Import file picker via SDL3 dialogs (Windows / macOS), plus drag-and-drop
+  onto the window; JSON parse/apply is not connected yet
 - The Results / app color palette and app-palette Button / Chip / Toggle
   (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings

@@ -81,9 +81,18 @@ void DrawPlaceholderScreen(App& app) {
 }  // namespace
 
 bool App::Init(
+    SDL_Window* app_window,
     SDL_Renderer* renderer,
     const std::string& base_directory,
     std::string& error) {
+    window = app_window;
+    import_event = SDL_RegisterEvents(1);
+    if (import_event == static_cast<uint32_t>(static_cast<Sint32>(-1))) {
+        error = "Could not register the Import file-dialog event.";
+        window = nullptr;
+        return false;
+    }
+
     const std::string images = base_directory + "assets/images/";
     logo_wordmark = LoadImage(renderer, images + "logo_wordmark.png");
     logo_badge = LoadImage(renderer, images + "logo_badge.png");
@@ -243,13 +252,39 @@ void App::ExportTrackJson() {
 
 void App::ImportFile(const std::string& path) {
     const std::string file = path.substr(path.find_last_of("/\\") + 1);
-    ShowToast("JSON import isn't connected yet.", 4.0);
-    LogActivity(*this, file + ": JSON import isn't connected yet.", false);
+    ShowToast("Picked " + file + " — JSON parsing not yet implemented.", 4.0);
+    LogActivity(*this, file + ": JSON parsing not yet implemented.", false);
 }
 
 void App::OpenImportDialog() {
-    ShowToast("File picker lands with JSON import.");
-    LogActivity(*this, "File picker isn't connected yet.", false);
+    static const SDL_DialogFileFilter filters[] = {
+        {"Apex Labs JSON", "json"},
+    };
+    if (import_event == 0) {
+        ShowToast("Couldn't open the file picker.");
+        return;
+    }
+
+    // Callback may run on another thread: only copy the path and push an event.
+    SDL_ShowOpenFileDialog(
+        [](void* userdata, const char* const* files, int /*filter*/) {
+            if (!files || !files[0]) {
+                return;
+            }
+            SDL_Event event{};
+            event.type = *static_cast<Uint32*>(userdata);
+            event.user.data1 = SDL_strdup(files[0]);
+            if (!event.user.data1) {
+                return;
+            }
+            SDL_PushEvent(&event);
+        },
+        &import_event,
+        window,
+        filters,
+        1,
+        nullptr,
+        false);
 }
 
 void DrawTopNav(App& app, const char* right_label) {
