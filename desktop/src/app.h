@@ -4,6 +4,7 @@
 #include <string>
 
 #include "textures.h"
+#include "track_setup.h"
 #include "vehicle.h"
 
 struct SDL_Renderer;
@@ -11,6 +12,7 @@ struct SDL_Renderer;
 enum class Screen {
     Start,
     CarSetup,
+    Results,
     ImportExport,
     Compare,
     Settings,
@@ -41,6 +43,15 @@ struct App {
     bool request_quit = false;
 
     Vehicle vehicle;
+    Vehicle saved_vehicle;
+    Track track = MakeDemoCircuit();
+    Weather weather;
+    SurfaceSettings surface;
+    SimulationSettings sim;
+    SetupPreferences prefs;
+
+    std::string toast;
+    double toast_until = 0.0;
 
     Image logo_wordmark;
     Image logo_badge;
@@ -54,6 +65,8 @@ struct App {
     void Shutdown();
     void Frame();
     void GoTo(Screen destination);
+    void ShowToast(const std::string& text, double seconds = 3.0);
+    void SaveSetup();
 };
 
 void DrawStartScreen(App& app);

@@ -25,8 +25,8 @@ constexpr FontFile kFiles[] = {
 const std::map<Face, std::vector<float>> kSizes = {
     {Face::SpaceBold, {15, 17, 18, 24}},
     {Face::SpaceMedium, {18}},
-    {Face::PlexRegular, {8, 9, 10, 11, 14}},
-    {Face::PlexSemiBold, {9, 10, 11, 12, 14, 20}},
+    {Face::PlexRegular, {8, 9, 10, 11, 13, 14}},
+    {Face::PlexSemiBold, {9, 10, 11, 12, 13, 14, 20}},
 };
 
 std::map<std::pair<Face, int>, ImFont*> g_fonts;
@@ -114,7 +114,7 @@ void ApplyStyle() {
     style.FramePadding = ImVec2(12, 9);
     style.PopupRounding = 8;
     style.PopupBorderSize = 1;
-    style.ItemSpacing = ImVec2(8, 8);
+    style.ItemSpacing = ImVec2(6, 6);
     style.ScrollbarSize = 8;
     style.ScrollbarRounding = 8;
     style.AntiAliasedLines = true;

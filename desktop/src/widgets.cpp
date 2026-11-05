@@ -219,6 +219,81 @@ void IconArrowRight(
         thickness);
 }
 
+void IconWeather(
+    ImDrawList* draw_list,
+    ImVec2 top_left,
+    float scale,
+    bool rain) {
+    auto Point = [&](float x, float y) {
+        return ImVec2(top_left.x + x * scale, top_left.y + y * scale);
+    };
+    const ImU32 sun = theme::kRed;
+    const ImU32 cloud = theme::Hex(0xB8BCC4);
+    const ImU32 background = theme::setup::kMap;
+    const ImVec2 sun_center = Point(30.0F, 28.0F);
+    for (int i = 0; i < 8; ++i) {
+        const float angle = i * 3.14159265F / 4.0F;
+        const ImVec2 direction(std::cos(angle), std::sin(angle));
+        draw_list->AddLine(
+            ImVec2(
+                sun_center.x + direction.x * 15.0F * scale,
+                sun_center.y + direction.y * 15.0F * scale),
+            ImVec2(
+                sun_center.x + direction.x * 21.0F * scale,
+                sun_center.y + direction.y * 21.0F * scale),
+            sun,
+            2.0F * scale);
+    }
+    draw_list->AddCircle(sun_center, 11.0F * scale, sun, 32, 2.0F * scale);
+
+    struct Blob {
+        float x;
+        float y;
+        float radius;
+    };
+    const Blob blobs[] = {
+        {44.0F, 50.0F, 11.0F},
+        {58.0F, 38.0F, 16.0F},
+        {76.0F, 44.0F, 13.0F},
+        {86.0F, 54.0F, 10.0F},
+    };
+    constexpr float kOutline = 2.0F;
+    for (const Blob& blob : blobs) {
+        draw_list->AddCircleFilled(
+            Point(blob.x, blob.y),
+            (blob.radius + kOutline) * scale,
+            cloud,
+            40);
+    }
+    draw_list->AddRectFilled(
+        Point(44.0F, 50.0F - kOutline),
+        Point(86.0F, 64.0F + kOutline),
+        cloud,
+        10.0F * scale);
+    for (const Blob& blob : blobs) {
+        draw_list->AddCircleFilled(
+            Point(blob.x, blob.y),
+            blob.radius * scale,
+            background,
+            40);
+    }
+    draw_list->AddRectFilled(
+        Point(44.0F, 50.0F),
+        Point(86.0F, 64.0F),
+        background,
+        8.0F * scale);
+    if (rain) {
+        for (int i = 0; i < 4; ++i) {
+            const float x = 52.0F + i * 9.0F;
+            draw_list->AddLine(
+                Point(x, 68.0F),
+                Point(x - 3.0F, 76.0F),
+                theme::Hex(0x6FA8FF),
+                2.0F * scale);
+        }
+    }
+}
+
 bool Pill(
     const char* id,
     const char* label,
@@ -335,7 +410,7 @@ bool SetupSlider(
     float step) {
     const float label_size = compact ? 10.0F : 11.0F;
     const float bar_height = compact ? 5.0F : 6.0F;
-    const float gap = compact ? 6.0F : 7.0F;
+    const float gap = compact ? 4.0F : 5.0F;
     const float width = ImGui::GetContentRegionAvail().x;
 
     char buffer[48];
@@ -419,6 +494,34 @@ bool SetupSlider(
 
 void SectionLabel(const char* text) {
     Text(Face::PlexSemiBold, 9.0F, theme::setup::kMuted2, text);
+}
+
+bool BigRedButton(const char* id, const char* label, ImVec2 size) {
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    bool hovered = false;
+    bool held = false;
+    const bool pressed = HitArea(id, size, &hovered, &held);
+    SetHandCursorIfHovered();
+    const ImU32 background = held
+        ? theme::kRedDark
+        : (hovered ? theme::Hex(0xF2160F) : theme::kRed);
+    ImDrawList* draw_list = DrawList();
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        background,
+        12.0F);
+    const ImVec2 text_size = TextSize(Face::PlexSemiBold, 20.0F, label);
+    TextAt(
+        draw_list,
+        ImVec2(
+            position.x + (size.x - text_size.x) * 0.5F,
+            position.y + (size.y - text_size.y) * 0.5F),
+        Face::PlexSemiBold,
+        20.0F,
+        theme::kWhite,
+        label);
+    return pressed;
 }
 
 bool HitArea(const char* id, ImVec2 size, bool* hovered, bool* held) {

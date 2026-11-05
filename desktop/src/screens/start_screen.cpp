@@ -243,6 +243,11 @@ void DrawStartScreen(App& app) {
             MenuIcon::Plus,
             true)) {
         app.vehicle = Vehicle{};
+        app.saved_vehicle = app.vehicle;
+        app.track = MakeDemoCircuit();
+        app.weather = Weather{};
+        app.surface = SurfaceSettings{};
+        app.sim = SimulationSettings{};
         app.car_panel = CarPanel::Aerodynamics;
         app.track_panel = TrackPanel::Circuit;
         app.track_focus = false;

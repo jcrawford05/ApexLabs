@@ -48,10 +48,15 @@ void IconArrowRight(
     float size,
     ImU32 color,
     float thickness = 2.0F);
+void IconWeather(
+    ImDrawList* draw_list,
+    ImVec2 top_left,
+    float scale,
+    bool rain);
 
 struct PillStyle {
-    float pad_x = 11.0F;
-    float pad_y = 7.0F;
+    float pad_x = 10.0F;
+    float pad_y = 6.0F;
     float rounding = 7.0F;
     float font_size = 10.0F;
 };
@@ -80,6 +85,7 @@ bool SetupSlider(
     bool compact = false,
     float step = 0.0F);
 void SectionLabel(const char* text);
+bool BigRedButton(const char* id, const char* label, ImVec2 size);
 
 bool HitArea(
     const char* id,

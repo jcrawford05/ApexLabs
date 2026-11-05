@@ -1,5 +1,8 @@
 #include "app.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "imgui.h"
 #include "theme.h"
 #include "widgets.h"
@@ -10,6 +13,8 @@ const char* ScreenTitle(Screen screen) {
     switch (screen) {
         case Screen::CarSetup:
             return "Car Setup";
+        case Screen::Results:
+            return "Results";
         case Screen::ImportExport:
             return "Import / Export";
         case Screen::Compare:
@@ -101,6 +106,7 @@ void App::Frame() {
         case Screen::CarSetup:
             DrawSetupScreen(*this);
             break;
+        case Screen::Results:
         case Screen::ImportExport:
         case Screen::Compare:
         case Screen::Settings:
@@ -108,10 +114,69 @@ void App::Frame() {
             break;
     }
     ImGui::End();
+
+    const double now = ImGui::GetTime();
+    if (!toast.empty() && now < toast_until) {
+        const float alpha = static_cast<float>(
+            std::min(1.0, (toast_until - now) / 0.3));
+        ImDrawList* foreground = ImGui::GetForegroundDrawList();
+        const ImVec2 text_size =
+            ui::TextSize(theme::Face::PlexRegular, 13, toast.c_str());
+        const ImVec2 toast_size(text_size.x + 32.0F, text_size.y + 20.0F);
+        const ImVec2 position(
+            viewport->Pos.x + (viewport->Size.x - toast_size.x) * 0.5F,
+            viewport->Pos.y + viewport->Size.y - toast_size.y - 28.0F);
+        const auto fade = [alpha](ImU32 color) {
+            const int source_alpha = static_cast<int>((color >> 24) & 0xFF);
+            const int next_alpha =
+                static_cast<int>(source_alpha * alpha);
+            return (color & 0x00FFFFFF) |
+                (static_cast<ImU32>(next_alpha) << 24);
+        };
+        foreground->AddRectFilled(
+            ImVec2(position.x, position.y + 4.0F),
+            ImVec2(position.x + toast_size.x, position.y + toast_size.y + 6.0F),
+            fade(IM_COL32(0, 0, 0, 120)),
+            10.0F);
+        foreground->AddRectFilled(
+            position,
+            ImVec2(position.x + toast_size.x, position.y + toast_size.y),
+            fade(theme::setup::kPanel),
+            10.0F);
+        foreground->AddRect(
+            position,
+            ImVec2(position.x + toast_size.x, position.y + toast_size.y),
+            fade(theme::setup::kPanelBorder),
+            10.0F);
+        foreground->AddRectFilled(
+            ImVec2(position.x, position.y + 10.0F),
+            ImVec2(position.x + 3.0F, position.y + toast_size.y - 10.0F),
+            fade(theme::kRed),
+            2.0F);
+        ui::TextAt(
+            foreground,
+            ImVec2(position.x + 16.0F, position.y + 10.0F),
+            theme::Face::PlexRegular,
+            13.0F,
+            fade(theme::kWhite),
+            toast.c_str());
+    } else if (!toast.empty() && now >= toast_until) {
+        toast.clear();
+    }
 }
 
 void App::GoTo(Screen destination) {
     screen = destination;
+}
+
+void App::ShowToast(const std::string& text, double seconds) {
+    toast = text;
+    toast_until = ImGui::GetTime() + seconds;
+}
+
+void App::SaveSetup() {
+    saved_vehicle = vehicle;
+    ShowToast("Setup saved.");
 }
 
 void DrawTopNav(App& app, const char* right_label) {
