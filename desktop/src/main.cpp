@@ -5,6 +5,7 @@
 // c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
 
 #include <cstdio>
+#include <string>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -12,6 +13,8 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
+#include "textures.h"
+#include "theme.h"
 
 namespace {
 
@@ -83,6 +86,26 @@ int main(int, char**) {
         return 1;
     }
 
+    const char* base_path = SDL_GetBasePath();
+    const std::string base_directory = base_path ? base_path : "";
+    float pixel_scale = SDL_GetWindowPixelDensity(window);
+    if (pixel_scale <= 0) {
+        pixel_scale = 1;
+    }
+    if (!theme::LoadFonts(base_directory + "assets/fonts", pixel_scale)) {
+        std::fprintf(stderr, "Apex Lab fonts could not be loaded.\n");
+        Shutdown(window, renderer);
+        return 1;
+    }
+    theme::ApplyStyle();
+
+    Image wordmark =
+        LoadImage(renderer, base_directory + "assets/images/logo_wordmark.png");
+    if (!wordmark) {
+        Shutdown(window, renderer);
+        return 1;
+    }
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -107,9 +130,12 @@ int main(int, char**) {
         ImGui::NewFrame();
 
         ImGui::SetNextWindowPos(ImVec2(32.0F, 32.0F), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(440.0F, 210.0F), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(500.0F, 340.0F), ImGuiCond_FirstUseEver);
         ImGui::Begin("Apex Lab");
+        ImGui::Image(wordmark.id(), ImVec2(237.0F, 95.5F));
+        ImGui::PushFont(theme::Font(theme::Face::SpaceBold, 24));
         ImGui::TextUnformatted("Apex Lab");
+        ImGui::PopFont();
         ImGui::TextUnformatted("Desktop UI Prototype");
         ImGui::Spacing();
         ImGui::TextUnformatted("SDL3 + Dear ImGui initialized successfully");
@@ -130,6 +156,7 @@ int main(int, char**) {
         SDL_RenderPresent(renderer);
     }
 
+    FreeImage(wordmark);
     Shutdown(window, renderer);
     return 0;
 }

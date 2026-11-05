@@ -60,7 +60,11 @@ target_include_directories(apex_imgui PUBLIC
   ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(apex_imgui PUBLIC SDL3::SDL3)
 
-add_executable(apex_lab_desktop src/main.cpp)
+add_executable(apex_lab_desktop
+  src/main.cpp
+  src/theme.cpp
+  src/textures.cpp)
+target_include_directories(apex_lab_desktop PRIVATE src third_party)
 target_link_libraries(apex_lab_desktop PRIVATE apex_imgui)
 
 if(MSVC)
@@ -73,3 +77,9 @@ if(WIN32)
   set_target_properties(apex_lab_desktop PROPERTIES
     WIN32_EXECUTABLE $<CONFIG:Release>)
 endif()
+
+add_custom_command(TARGET apex_lab_desktop POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets
+          $<TARGET_FILE_DIR:apex_lab_desktop>/assets
+  COMMENT "Copying Apex Lab desktop assets")
