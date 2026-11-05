@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "Demo Circuit",
+  "country": null,
+  "openf1_circuit_key": null,
+  "segments": [
+    { "seq": 1,  "name": "Main straight",  "type": "straight", "sector": 1, "length_m": 900 },
+    { "seq": 2,  "name": "T1 braking",     "type": "braking",  "sector": 1, "length_m": 110 },
+    { "seq": 3,  "name": "T1 hairpin",     "type": "corner",   "sector": 1, "length_m": 90,  "radius_m": 25 },
+    { "seq": 4,  "name": "Short straight", "type": "straight", "sector": 1, "length_m": 450 },
+    { "seq": 5,  "name": "T2 sweeper",     "type": "corner",   "sector": 2, "length_m": 300, "radius_m": 180 },
+    { "seq": 6,  "name": "Hill straight",  "type": "straight", "sector": 2, "length_m": 600 },
+    { "seq": 7,  "name": "T3 braking",     "type": "braking",  "sector": 2, "length_m": 80 },
+    { "seq": 8,  "name": "T3 left",        "type": "corner",   "sector": 2, "length_m": 120, "radius_m": 60 },
+    { "seq": 9,  "name": "Top straight",   "type": "straight", "sector": 3, "length_m": 700 },
+    { "seq": 10, "name": "T4 braking",     "type": "braking",  "sector": 3, "length_m": 100 },
+    { "seq": 11, "name": "T4 left",        "type": "corner",   "sector": 3, "length_m": 150, "radius_m": 40 },
+    { "seq": 12, "name": "Final straight", "type": "straight", "sector": 3, "length_m": 400 }
+  ]
+}

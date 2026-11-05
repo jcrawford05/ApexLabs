@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "note": "SAMPLE tire components, same shape as the components table (category = tire). Labels and lap counts are placeholders until the physics engine computes them.",
+  "tires": [
+    { "name": "Soft Compound",   "short": "Soft",   "mass_kg": 44.0, "properties": { "peak_grip_coeff": 1.80, "optimal_temp_c": 95,  "wear_rate_per_km": 0.0045 },
+      "labels": { "grip": "High",   "durability": "Low",    "warm_up": "Fast",   "degradation": "High",   "peak_window": "Laps 2–7",  "life_laps": 18 } },
+    { "name": "Medium Compound", "short": "Medium", "mass_kg": 46.0, "properties": { "peak_grip_coeff": 1.65, "optimal_temp_c": 100, "wear_rate_per_km": 0.0025 },
+      "labels": { "grip": "Medium", "durability": "Medium", "warm_up": "Medium", "degradation": "Medium", "peak_window": "Laps 3–14", "life_laps": 30 } },
+    { "name": "Hard Compound",   "short": "Hard",   "mass_kg": 48.0, "properties": { "peak_grip_coeff": 1.52, "optimal_temp_c": 108, "wear_rate_per_km": 0.0014 },
+      "labels": { "grip": "Low",    "durability": "High",   "warm_up": "Slow",   "degradation": "Low",    "peak_window": "Laps 5–25", "life_laps": 45 } }
+  ]
+}
