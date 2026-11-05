@@ -54,9 +54,10 @@ For a Visual Studio multi-configuration build:
 
 The application opens a resizable window titled **Apex Lab**.
 
-The Start Screen provides navigation to the current desktop destinations. The
-destination screens deliberately show a migration placeholder and a **Back to
-Home** action until their corresponding interfaces are ported.
+The Start Screen provides navigation to the current desktop destinations.
+Car & Track Setup is partially migrated: top navigation, page header, category
+lists, and empty detail panels. Import / Export, Comparison, and Settings still
+show a migration placeholder with a **Back to Home** action.
 
 ## Current scope
 
@@ -68,12 +69,13 @@ This phase contains only:
 - SDL event processing and a basic application loop
 - The Apex Lab color theme, custom fonts, and branded image loading
 - The migrated Start Screen and its responsive reference composition
+- A Car & Track Setup shell with top nav, four-column layout, and category cards
 - Basic navigation to Car Setup, Import / Export, Comparison, and Settings
-- Explicit placeholders for screens that have not yet been migrated
+- Explicit placeholders for screens and panels that have not yet been migrated
 - Ordered ImGui, renderer, window, and SDL cleanup
 
-It does **not** yet include the broader vehicle data models, simulation logic,
-or JSON support from the team prototype.
+It does **not** yet include car/track panel controls, vehicle data models,
+simulation logic, or JSON support from the team prototype.
 
 ## Provenance
 
@@ -83,8 +85,9 @@ adapted from the existing team development workspace:
 - Repository: `C:\Users\cesar\Documents\ApexLabsDevSpace`
 - Source commit: `c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0`
 - Source files: `src/main.cpp`, `src/app.cpp`, `src/screens/start_screen.cpp`,
-  `src/widgets.cpp`, `src/theme.cpp`, and `src/textures.cpp`
+  `src/screens/setup_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`, and
+  `src/textures.cpp`
 
-Only the Start Screen and the minimum support code it requires were ported.
-Existing source authorship is preserved through this reference; this phase
-does not claim the full frontend has been migrated.
+Only the Start Screen, the Car & Track Setup shell, and the minimum support
+code they require were ported. Existing source authorship is preserved through
+this reference; this phase does not claim the full frontend has been migrated.

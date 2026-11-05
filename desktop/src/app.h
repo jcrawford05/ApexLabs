@@ -1,4 +1,4 @@
-// Minimal application state and navigation for the Start Screen migration.
+// Application state and navigation for migrated desktop screens.
 #pragma once
 
 #include <string>
@@ -15,8 +15,28 @@ enum class Screen {
     Settings,
 };
 
+enum class CarPanel {
+    Aerodynamics,
+    Tires,
+    Powertrain,
+    Chassis,
+    Brakes,
+    Count,
+};
+
+enum class TrackPanel {
+    Circuit,
+    Weather,
+    Surface,
+    Simulation,
+    Count,
+};
+
 struct App {
     Screen screen = Screen::Start;
+    CarPanel car_panel = CarPanel::Aerodynamics;
+    TrackPanel track_panel = TrackPanel::Circuit;
+    bool track_focus = false;
     bool request_quit = false;
 
     Image logo_wordmark;
@@ -34,3 +54,5 @@ struct App {
 };
 
 void DrawStartScreen(App& app);
+void DrawSetupScreen(App& app);
+void DrawTopNav(App& app, const char* right_label);

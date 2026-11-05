@@ -1,4 +1,4 @@
-// Start Screen colors, fonts, and ImGui style for Apex Lab.
+// Start Screen and Car & Track Setup colors, fonts, and ImGui style for Apex Lab.
 // Adapted from ApexLabsDevSpace at commit c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
 #pragma once
 
@@ -23,10 +23,25 @@ inline constexpr ImU32 kRedDark = Hex(0xB80500);
 inline constexpr ImU32 kRedBorder = Hex(0xFF413C);
 inline constexpr ImU32 kWhite = Hex(0xFFFFFF);
 
+inline constexpr ImU32 kNavBg = Hex(0x000000);
+inline constexpr ImU32 kNavActive = Hex(0xF4F4F5);
+inline constexpr ImU32 kNavIdle = Hex(0x9A9AA3);
+
+// Start + Car & Track Setup ("setup" palette)
 namespace setup {
 inline constexpr ImU32 kBg = Hex(0x090A0D);
 inline constexpr ImU32 kPanel = Hex(0x0E1014);
 inline constexpr ImU32 kPanelBorder = Hex(0x262A31);
+inline constexpr ImU32 kDivider = Hex(0x252930);
+inline constexpr ImU32 kCard = Hex(0x13151A);
+inline constexpr ImU32 kCardBorder = Hex(0x22262C);
+inline constexpr ImU32 kCardActive = Hex(0x1B1111);
+inline constexpr ImU32 kCardActiveBorder = Hex(0x681D1A);
+inline constexpr ImU32 kTitle = Hex(0xF4F5F6);
+inline constexpr ImU32 kCardTitle = Hex(0xC7CBD1);
+inline constexpr ImU32 kActiveSub = Hex(0xD98681);
+inline constexpr ImU32 kMuted = Hex(0x6D737D);
+inline constexpr ImU32 kMuted3 = Hex(0x656C76);
 inline constexpr ImU32 kTagline = Hex(0xD6D8DD);
 inline constexpr ImU32 kFooter = Hex(0x737984);
 inline constexpr ImU32 kMenuCard = Hex(0x13151A);

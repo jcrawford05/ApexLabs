@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "theme.h"
+#include "widgets.h"
 
 namespace {
 
@@ -93,14 +94,111 @@ void App::Frame() {
             ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleColor();
 
-    if (screen == Screen::Start) {
-        DrawStartScreen(*this);
-    } else {
-        DrawPlaceholderScreen(*this);
+    switch (screen) {
+        case Screen::Start:
+            DrawStartScreen(*this);
+            break;
+        case Screen::CarSetup:
+            DrawSetupScreen(*this);
+            break;
+        case Screen::ImportExport:
+        case Screen::Compare:
+        case Screen::Settings:
+            DrawPlaceholderScreen(*this);
+            break;
     }
     ImGui::End();
 }
 
 void App::GoTo(Screen destination) {
     screen = destination;
+}
+
+void DrawTopNav(App& app, const char* right_label) {
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const float width = ImGui::GetContentRegionAvail().x;
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + width, position.y + 64.0F),
+        theme::kNavBg);
+
+    ImGui::SetCursorScreenPos(ImVec2(position.x + 32.0F, position.y + 4.0F));
+    if (ui::HitArea("##logo", ImVec2(136.0F, 56.0F))) {
+        app.GoTo(Screen::Start);
+    }
+    ui::SetHandCursorIfHovered();
+    if (app.logo_wordmark) {
+        constexpr float kScale = 136.4F / 507.0F;
+        const ImVec2 image(
+            position.x + 32.0F + 34.0F * kScale,
+            position.y - 2.3F);
+        draw_list->AddImage(
+            app.logo_wordmark.id(),
+            image,
+            ImVec2(image.x + 473.0F * kScale, image.y + 191.0F * kScale));
+    }
+
+    struct Tab {
+        const char* label;
+        Screen screen;
+    };
+    const Tab tabs[] = {
+        {"Car Setup", Screen::CarSetup},
+        {"Import / Export", Screen::ImportExport},
+        {"Comparison", Screen::Compare},
+        {"Settings", Screen::Settings},
+    };
+
+    float total = 0.0F;
+    float widths[4];
+    for (int i = 0; i < 4; ++i) {
+        widths[i] =
+            ui::TextSize(theme::Face::PlexSemiBold, 14, tabs[i].label).x + 4.0F;
+        total += widths[i] + (i ? 28.0F : 0.0F);
+    }
+
+    float x = position.x + (width - total) * 0.5F;
+    for (int i = 0; i < 4; ++i) {
+        const Tab& tab = tabs[i];
+        const bool active = app.screen == tab.screen;
+        ImGui::SetCursorScreenPos(ImVec2(x, position.y));
+        ImGui::PushID(i);
+        bool hovered = false;
+        if (ui::HitArea("##tab", ImVec2(widths[i], 64.0F), &hovered)) {
+            app.GoTo(tab.screen);
+        }
+        ui::SetHandCursorIfHovered();
+        ImGui::PopID();
+
+        const ImU32 color = active
+            ? theme::kNavActive
+            : (hovered ? theme::Hex(0xC9C9D0) : theme::kNavIdle);
+        ui::TextAt(
+            draw_list,
+            ImVec2(x + 2.0F, position.y + 22.0F),
+            active ? theme::Face::PlexSemiBold : theme::Face::PlexRegular,
+            14.0F,
+            color,
+            tab.label);
+        if (active) {
+            draw_list->AddRectFilled(
+                ImVec2(x + 2.0F, position.y + 61.0F),
+                ImVec2(x + widths[i] - 2.0F, position.y + 64.0F),
+                theme::kRed);
+        }
+        x += widths[i] + 28.0F;
+    }
+
+    const ImVec2 label_size =
+        ui::TextSize(theme::Face::PlexRegular, 13, right_label);
+    ui::TextAt(
+        draw_list,
+        ImVec2(position.x + width - 32.0F - label_size.x, position.y + 24.0F),
+        theme::Face::PlexRegular,
+        13.0F,
+        theme::kNavIdle,
+        right_label);
+
+    ImGui::SetCursorScreenPos(ImVec2(position.x, position.y + 64.0F));
 }
