@@ -211,18 +211,3 @@ std::string FormatDelta(float seconds) {
     return buffer;
 }
 
-std::string FormatSpeed(float kmh, bool with_unit) {
-    char buffer[32];
-    if (with_unit) {
-        std::snprintf(buffer, sizeof(buffer), "%.0f km/h", kmh);
-    } else {
-        std::snprintf(buffer, sizeof(buffer), "%.0f", kmh);
-    }
-    return buffer;
-}
-
-std::string FormatTemp(float celsius) {
-    char buffer[32];
-    std::snprintf(buffer, sizeof(buffer), "%.0f\xC2\xB0" "C", celsius);
-    return buffer;
-}

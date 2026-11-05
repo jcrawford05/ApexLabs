@@ -643,6 +643,87 @@ bool Button(
     return pressed;
 }
 
+bool Segmented(
+    const char* id,
+    const char* const* items,
+    int count,
+    int* selected) {
+    ImGui::PushID(id);
+    float widths[8] = {};
+    float total = 3.0F + 3.0F + 2.0F;
+    for (int i = 0; i < count && i < 8; ++i) {
+        const Face face =
+            (i == *selected) ? Face::PlexSemiBold : Face::SpaceMedium;
+        widths[static_cast<size_t>(i)] =
+            TextSize(face, 13.0F, items[i]).x + 28.0F;
+        total += widths[static_cast<size_t>(i)] + (i > 0 ? 2.0F : 0.0F);
+    }
+    const float line_h = theme::LineHeight(Face::SpaceMedium, 13.0F);
+    const float option_h = line_h + 12.0F;
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const ImVec2 size(total, option_h + 8.0F);
+    ImDrawList* draw_list = DrawList();
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        theme::app::kRaised,
+        8.0F);
+    draw_list->AddRect(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        theme::app::kControlBorder,
+        8.0F);
+    bool changed = false;
+    float x = position.x + 4.0F;
+    for (int i = 0; i < count && i < 8; ++i) {
+        ImGui::SetCursorScreenPos(ImVec2(x, position.y + 4.0F));
+        ImGui::PushID(i);
+        bool hovered = false;
+        if (HitArea(
+                "##opt",
+                ImVec2(widths[static_cast<size_t>(i)], option_h),
+                &hovered) &&
+            *selected != i) {
+            *selected = i;
+            changed = true;
+        }
+        SetHandCursorIfHovered();
+        ImGui::PopID();
+        const bool selected_option = (*selected == i);
+        if (selected_option) {
+            draw_list->AddRectFilled(
+                ImVec2(x, position.y + 4.0F),
+                ImVec2(
+                    x + widths[static_cast<size_t>(i)],
+                    position.y + 4.0F + option_h),
+                theme::kRed,
+                6.0F);
+        } else if (hovered) {
+            draw_list->AddRectFilled(
+                ImVec2(x, position.y + 4.0F),
+                ImVec2(
+                    x + widths[static_cast<size_t>(i)],
+                    position.y + 4.0F + option_h),
+                theme::Hex(0x2A2A30),
+                6.0F);
+        }
+        TextAt(
+            draw_list,
+            ImVec2(x + 14.0F, position.y + 4.0F + 6.0F),
+            selected_option ? Face::PlexSemiBold : Face::SpaceMedium,
+            13.0F,
+            selected_option
+                ? theme::kWhite
+                : (hovered ? theme::app::kText : theme::app::kMuted),
+            items[i]);
+        x += widths[static_cast<size_t>(i)] + 2.0F;
+    }
+    ImGui::SetCursorScreenPos(position);
+    ImGui::Dummy(size);
+    ImGui::PopID();
+    return changed;
+}
+
 bool Toggle(const char* id, bool* value) {
     const ImVec2 size(40.0F, 22.0F);
     const ImVec2 position = ImGui::GetCursorScreenPos();
@@ -798,6 +879,141 @@ bool Chip(const char* id, const char* label, bool selected) {
         text,
         label);
     return pressed;
+}
+
+bool NumberInput(
+    const char* id,
+    float* value,
+    const char* fmt,
+    const char* unit,
+    float width,
+    float min,
+    float max) {
+    ImGui::PushID(id);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const float height = 36.0F;
+    ImDrawList* draw_list = DrawList();
+    draw_list->AddRectFilled(
+        position,
+        ImVec2(position.x + width, position.y + height),
+        theme::app::kRaised,
+        8.0F);
+    const ImVec2 unit_size = TextSize(Face::PlexRegular, 12.0F, unit);
+    const float field_w = width - 25.0F - 8.0F - unit_size.x;
+
+    ImGui::SetCursorScreenPos(ImVec2(position.x + 13.0F, position.y + 9.5F));
+    ImGui::PushFont(theme::Font(Face::PlexSemiBold, 13.0F));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0F, 0.0F));
+    ImGui::SetNextItemWidth(field_w);
+    const bool changed = ImGui::InputFloat(
+        "##v",
+        value,
+        0.0F,
+        0.0F,
+        fmt,
+        ImGuiInputTextFlags_AutoSelectAll);
+    const bool active = ImGui::IsItemActive();
+    const bool hovered = ImGui::IsItemHovered();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
+    ImGui::PopFont();
+    if (changed) {
+        *value = std::clamp(*value, min, max);
+    }
+
+    const ImU32 border = active
+        ? theme::kRed
+        : (hovered ? theme::Hex(0x4A4A52) : theme::app::kControlBorder);
+    draw_list->AddRect(
+        position,
+        ImVec2(position.x + width, position.y + height),
+        border,
+        8.0F);
+    TextAt(
+        draw_list,
+        ImVec2(position.x + width - 12.0F - unit_size.x, position.y + 10.5F),
+        Face::PlexRegular,
+        12.0F,
+        theme::app::kMuted,
+        unit);
+    ImGui::SetCursorScreenPos(position);
+    ImGui::Dummy(ImVec2(width, height));
+    ImGui::PopID();
+    return changed;
+}
+
+bool TickSlider(
+    const char* id,
+    float* value,
+    float min,
+    float max,
+    int ticks,
+    float width,
+    float step) {
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    const ImVec2 size(width, 16.0F);
+    bool hovered = false;
+    bool held = false;
+    HitArea(id, size, &hovered, &held);
+    if (hovered || held) {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
+    const float pad = 7.0F;
+    const float x0 = position.x + pad;
+    const float x1 = position.x + width - pad;
+    bool changed = false;
+    if (held) {
+        const float t = std::clamp(
+            (ImGui::GetIO().MousePos.x - x0) / (x1 - x0),
+            0.0F,
+            1.0F);
+        float next = min + t * (max - min);
+        if (step > 0.0F) {
+            next = std::round(next / step) * step;
+        }
+        next = std::clamp(next, min, max);
+        if (next != *value) {
+            *value = next;
+            changed = true;
+        }
+    }
+    const float t = std::clamp((*value - min) / (max - min), 0.0F, 1.0F);
+    const float cy = position.y + 8.0F;
+    ImDrawList* draw_list = DrawList();
+    draw_list->AddRectFilled(
+        ImVec2(x0, cy - 1.5F),
+        ImVec2(x1, cy + 1.5F),
+        theme::app::kControlBorder,
+        2.0F);
+    for (int i = 0; i < ticks; ++i) {
+        const float tx = x0 +
+            (x1 - x0) * (ticks > 1 ? static_cast<float>(i) / (ticks - 1) : 0.0F);
+        draw_list->AddLine(
+            ImVec2(tx, cy - 4.0F),
+            ImVec2(tx, cy + 4.0F),
+            theme::Hex(0x5A5A62),
+            1.0F);
+    }
+    const float knob_x = x0 + (x1 - x0) * t;
+    draw_list->AddRectFilled(
+        ImVec2(x0, cy - 1.5F),
+        ImVec2(knob_x, cy + 1.5F),
+        theme::kRed,
+        2.0F);
+    draw_list->AddCircleFilled(
+        ImVec2(knob_x, cy + 1.0F),
+        7.5F,
+        IM_COL32(0, 0, 0, 90),
+        24);
+    draw_list->AddCircleFilled(
+        ImVec2(knob_x, cy),
+        7.0F,
+        hovered || held ? theme::Hex(0xFFFFFF) : theme::Hex(0xF4F4F5),
+        24);
+    return changed;
 }
 
 void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color) {

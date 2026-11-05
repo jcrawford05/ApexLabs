@@ -51,18 +51,6 @@ struct SimulationSettings {
     float fuel_kg = 30.0F;
 };
 
-// App-wide defaults from Settings. Live edits go into App::prefs; Save copies
-// them to App::saved_prefs. Fields grow as Settings slices land.
-struct Preferences {
-    int time_step = 1;  // 0 = 1 ms, 1 = 5 ms, 2 = 10 ms
-    float telemetry_spacing_m = 5.0F;
-    float neutral_band_s = 0.05F;
-    bool show_section_numbers = true;
-    bool telemetry_in_exports = false;
-
-    int DifferencesFrom(const Preferences& other) const;
-};
-
 Track MakeDemoCircuit();
 const char* WeatherPresetName(WeatherPreset preset);
 const char* SegmentTypeName(SegmentType type);

@@ -64,9 +64,10 @@ migrated for its four-card layout (import drop zone, export rows, run
 history, activity log) against live setup/run state and sample history;
 JSON file I/O is still stubbed. Comparison is migrated against sample run
 history (run pickers, gap KPIs, setup diffs, section gaps, speed/gap
-chart). Settings is migrated for its shell (section nav, group cards, About
-strip) plus live prefs with Save / Reset against the fields other screens
-already read; per-section controls still land in later slices.
+chart). Settings is fully migrated (Simulation, Units & display, Data &
+storage, About) with live prefs, Save / Reset, and CHANGED rows. Speed and
+temperature units update Results, Comparison, and Setup displays immediately;
+Data path / clear-history remain stubbed until persistence lands.
 
 ## Current scope
 
@@ -87,9 +88,10 @@ This phase contains only:
 - Native Import file picker via SDL3 dialogs (Windows / macOS), plus drag-and-drop
   onto the window; JSON parse/apply is not connected yet
 - Comparison Tool against sample run history
-- Settings shell with sticky section nav, Save / Reset, and unsaved-change chrome
-- The Results / app color palette and app-palette Button / Chip / Toggle /
-  Dropdown / Badge (shared Space / Plex fonts)
+- Settings (Simulation, Units, Data & storage, About) with sticky section nav,
+  Save / Reset, unsaved-change chrome, and unit-aware Results / Compare / Setup
+- The Results / app color palette and app-palette Button / Chip / Segmented /
+  Toggle / Dropdown / NumberInput / TickSlider / Badge (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
 - Ordered ImGui, renderer, window, and SDL cleanup
 
@@ -111,6 +113,6 @@ adapted from the existing team development workspace:
   `src/data.*`
 
 Only the Start Screen, Car & Track Setup, Results, Import / Export,
-Comparison, Settings (shell + prefs save model), and the minimum support code
-they require were ported. Existing source authorship is preserved through this
-reference; this phase does not claim the full frontend has been migrated.
+Comparison, Settings, and the minimum support code they require were ported.
+Existing source authorship is preserved through this reference; this phase does
+not claim the full frontend has been migrated.

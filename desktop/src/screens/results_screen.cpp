@@ -265,8 +265,8 @@ void MapLegend(App& app, float width) {
             item(x, app::kLost, c);
             break;
         case MapColoring::Speed: {
-            std::string lo = "Slow (" + FormatSpeed(60) + ")";
-            std::string hi = "Fast (" + FormatSpeed(320) + ")";
+            std::string lo = "Slow (" + FormatSpeed(app, 60) + ")";
+            std::string hi = "Fast (" + FormatSpeed(app, 320) + ")";
             ui::TextAt(dl, ImVec2(x, p.y), Face::PlexSemiBold, 12, app::kMuted, lo.c_str());
             x += ui::TextSize(Face::PlexSemiBold, 12, lo.c_str()).x + 10;
             for (int i = 0; i < 120; ++i)
@@ -360,16 +360,21 @@ struct ChartRange {
     const char* unit;
 };
 
-ChartRange RangeFor(TraceChannel c) {
+ChartRange RangeFor(const App& app, TraceChannel c) {
     switch (c) {
         case TraceChannel::Speed:
-            return {0, 350, {100, 200, 300}, "km/h"};
+            return {0, 350, {100, 200, 300}, SpeedUnitLabel(app.prefs.speed_unit)};
         case TraceChannel::Throttle:
             return {0, 110, {25, 50, 75, 100}, "%"};
         case TraceChannel::Brake:
             return {0, 110, {25, 50, 75, 100}, "%"};
         case TraceChannel::TireTemp:
-            return {92, 108, {95, 100, 105}, "\xC2\xB0" "C"};
+            return {
+                92,
+                108,
+                {95, 100, 105},
+                app.prefs.temp_unit == TempUnit::F ? "\xC2\xB0" "F" : "\xC2\xB0" "C",
+            };
     }
     return {0, 1, {}, ""};
 }
@@ -395,7 +400,7 @@ void TelemetryChart(App& app, TraceChannel ch, ImVec2 p, ImVec2 size, float d0, 
         ImGui::Dummy(size);
         return;
     }
-    const ChartRange r = RangeFor(ch);
+    const ChartRange r = RangeFor(app, ch);
     const float left = axis ? 40.0f : 0.0f;
     const float plot_h = axis ? size.y - 28 : size.y;
     const ImVec2 a(p.x + left, p.y), b(p.x + size.x, p.y + plot_h);
@@ -434,7 +439,14 @@ void TelemetryChart(App& app, TraceChannel ch, ImVec2 p, ImVec2 size, float d0, 
         dl->AddLine(ImVec2(a.x, y), ImVec2(b.x, y), Hex(0x2A2A30), 1.0f);
         if (axis) {
             char buf[16];
-            std::snprintf(buf, sizeof(buf), "%.0f", tv);
+            float shown = tv;
+            if (ch == TraceChannel::Speed) {
+                shown = ConvertSpeed(app.prefs.speed_unit, tv);
+            }
+            if (ch == TraceChannel::TireTemp && app.prefs.temp_unit == TempUnit::F) {
+                shown = ConvertTemp(TempUnit::F, tv);
+            }
+            std::snprintf(buf, sizeof(buf), "%.0f", shown);
             ui::TextAt(dl, ImVec2(p.x, y - 7), Face::PlexRegular, 10, app::kMuted, buf);
         }
     }
@@ -488,10 +500,18 @@ void TelemetryChart(App& app, TraceChannel ch, ImVec2 p, ImVec2 size, float d0, 
             app.hover_section = sec;
             char val[48];
             switch (ch) {
-                case TraceChannel::Speed: std::snprintf(val, sizeof(val), "%s", FormatSpeed(v).c_str()); break;
-                case TraceChannel::Throttle: std::snprintf(val, sizeof(val), "Throttle %.0f%%", v); break;
-                case TraceChannel::Brake: std::snprintf(val, sizeof(val), "Brake %.0f%%", v); break;
-                case TraceChannel::TireTemp: std::snprintf(val, sizeof(val), "Tires %s", FormatTemp(v).c_str()); break;
+                case TraceChannel::Speed:
+                    std::snprintf(val, sizeof(val), "%s", FormatSpeed(app, v).c_str());
+                    break;
+                case TraceChannel::Throttle:
+                    std::snprintf(val, sizeof(val), "Throttle %.0f%%", v);
+                    break;
+                case TraceChannel::Brake:
+                    std::snprintf(val, sizeof(val), "Brake %.0f%%", v);
+                    break;
+                case TraceChannel::TireTemp:
+                    std::snprintf(val, sizeof(val), "Tires %s", FormatTemp(app, v).c_str());
+                    break;
             }
             char where[96];
             std::snprintf(where, sizeof(where), "%.0f m  \xC2\xB7  %d %s", i * tel.spacing_m, sec + 1,
@@ -572,7 +592,7 @@ void SectionPopup(App& app) {
             char v[4][32];
             std::snprintf(v[0], 32, "%.3f s", s.time_s);
             std::snprintf(v[1], 32, "%s", FormatDelta(s.delta_s).c_str());
-            std::snprintf(v[2], 32, "%s", FormatSpeed(s.min_speed_kmh).c_str());
+            std::snprintf(v[2], 32, "%s", FormatSpeed(app, s.min_speed_kmh).c_str());
             if (s.peak_brake_g > 0) std::snprintf(v[3], 32, "%.1f g", s.peak_brake_g);
             else std::snprintf(v[3], 32, "\xE2\x80\x94");
             const char* labels[4] = {"Section time", "vs reference", "Minimum speed", "Peak braking"};
@@ -742,7 +762,7 @@ void DrawResultsScreen(App& app) {
         std::snprintf(sub, sizeof(sub),
                       "%s  \xC2\xB7  %s  \xC2\xB7  %s, air %s / track %s  \xC2\xB7  Engine v%s  \xC2\xB7  Compared with reference Run #%d",
                       run.vehicle_name.c_str(), run.track_name.c_str(), run.weather_preset.c_str(),
-                      FormatTemp(run.air_c).c_str(), FormatTemp(run.track_c).c_str(),
+                      FormatTemp(app, run.air_c).c_str(), FormatTemp(app, run.track_c).c_str(),
                       run.engine_version.c_str(), run.reference_run_id);
         ui::TextAt(dl, ImVec2(p.x, p.y + 40), Face::PlexRegular, 13, app::kMuted, sub);
 
@@ -776,7 +796,7 @@ void DrawResultsScreen(App& app) {
         std::string lap_d = FormatDelta(run.lap_delta_s);
         Kpi("##k0", "LAP TIME", lap.c_str(), lap_d.c_str(), DeltaColor(run.lap_delta_s, band), nullptr, kw);
         ImGui::SetCursorScreenPos(ImVec2(p.x + (kw + gap), p.y));
-        std::string top = FormatSpeed(run.top_speed_kmh);
+        std::string top = FormatSpeed(app, run.top_speed_kmh);
         Kpi("##k1", "TOP SPEED", top.c_str(), nullptr, 0, run.top_speed_note.c_str(), kw);
         for (int s = 0; s < 3; ++s) {
             ImGui::SetCursorScreenPos(ImVec2(p.x + (kw + gap) * (2 + s), p.y));

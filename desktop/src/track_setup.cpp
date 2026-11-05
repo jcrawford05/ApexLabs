@@ -102,12 +102,3 @@ const char* SegmentTypeName(SegmentType type) {
     return "";
 }
 
-int Preferences::DifferencesFrom(const Preferences& other) const {
-    int count = 0;
-    count += time_step != other.time_step;
-    count += telemetry_spacing_m != other.telemetry_spacing_m;
-    count += neutral_band_s != other.neutral_band_s;
-    count += show_section_numbers != other.show_section_numbers;
-    count += telemetry_in_exports != other.telemetry_in_exports;
-    return count;
-}

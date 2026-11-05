@@ -181,15 +181,25 @@ int SpeedAndGapChart(App& app, const RunSummary& a, const RunSummary& b, ImVec2 
         dl->AddRectFilled(ImVec2(X(s0), p.y), ImVec2(X(s1), gap_top + gap_h), Hex(0xE10600, 40));
     }
 
-    // Speed panel
+    // Speed panel (axis labels follow Settings speed unit; plot stays in km/h)
     auto Ys = [&](float v) { return p.y + speed_h - v / 350.0f * speed_h; };
     for (float v : {100.0f, 200.0f, 300.0f}) {
         dl->AddLine(ImVec2(x0, Ys(v)), ImVec2(x1, Ys(v)), Hex(0x2A2A30), 1);
         char buf[16];
-        std::snprintf(buf, sizeof(buf), "%.0f", v);
+        std::snprintf(
+            buf,
+            sizeof(buf),
+            "%.0f",
+            ConvertSpeed(app.prefs.speed_unit, v));
         ui::TextAt(dl, ImVec2(p.x, Ys(v) - 7), Face::PlexRegular, 10, app::kMuted, buf);
     }
-    ui::TextAt(dl, ImVec2(p.x, p.y + speed_h - 8), Face::PlexRegular, 10, app::kMuted, "km/h");
+    ui::TextAt(
+        dl,
+        ImVec2(p.x, p.y + speed_h - 8),
+        Face::PlexRegular,
+        10,
+        app::kMuted,
+        SpeedUnitLabel(app.prefs.speed_unit));
     auto trace = [&](const RunSummary& r, ImU32 col, float thick) {
         std::vector<ImVec2> pts;
         for (size_t i = 0; i < r.speed_kmh.size(); ++i) pts.push_back(ImVec2(X(i * r.telemetry_spacing_m), Ys(r.speed_kmh[i])));
@@ -257,9 +267,19 @@ int SpeedAndGapChart(App& app, const RunSummary& a, const RunSummary& b, ImVec2 
                       track.segments[hovered_section].name.c_str());
         ui::Text(Face::PlexSemiBold, 12, app::kText, line);
         ui::Space(4);
-        std::snprintf(line, sizeof(line), "Run #%d  %s", a.run_id, FormatSpeed(a.speed_kmh[i]).c_str());
+        std::snprintf(
+            line,
+            sizeof(line),
+            "Run #%d  %s",
+            a.run_id,
+            FormatSpeed(app, a.speed_kmh[i]).c_str());
         ui::Text(Face::PlexSemiBold, 12, kRed, line);
-        std::snprintf(line, sizeof(line), "Run #%d  %s", b.run_id, FormatSpeed(b.speed_kmh[i]).c_str());
+        std::snprintf(
+            line,
+            sizeof(line),
+            "Run #%d  %s",
+            b.run_id,
+            FormatSpeed(app, b.speed_kmh[i]).c_str());
         ui::Text(Face::PlexSemiBold, 12, app::kMuted, line);
         ui::Space(4);
         std::string g = "Gap " + FormatDelta(gap[i]);
@@ -364,9 +384,23 @@ void DrawCompareScreen(App& app) {
         ImGui::SetCursorScreenPos(ImVec2(p.x + kw + gap, p.y));
         float ts_gap = a.top_speed_kmh - b.top_speed_kmh;
         char tsg[32];
-        std::snprintf(tsg, sizeof(tsg), "%s%.0f km/h", ts_gap > 0 ? "+" : ts_gap < 0 ? "\xE2\x88\x92" : "\xC2\xB1", std::fabs(ts_gap));
-        GapCard("##g1", "TOP SPEED", tsg, ts_gap > 0 ? app::kGained : ts_gap < 0 ? app::kLost : app::kNeutral,
-                FormatSpeed(a.top_speed_kmh) + "  vs  " + FormatSpeed(b.top_speed_kmh), kw);
+        const float shown_gap =
+            ConvertSpeed(app.prefs.speed_unit, std::fabs(ts_gap));
+        std::snprintf(
+            tsg,
+            sizeof(tsg),
+            "%s%.0f %s",
+            ts_gap > 0 ? "+" : ts_gap < 0 ? "\xE2\x88\x92" : "\xC2\xB1",
+            shown_gap,
+            SpeedUnitLabel(app.prefs.speed_unit));
+        GapCard(
+            "##g1",
+            "TOP SPEED",
+            tsg,
+            ts_gap > 0 ? app::kGained : ts_gap < 0 ? app::kLost : app::kNeutral,
+            FormatSpeed(app, a.top_speed_kmh) + "  vs  " +
+                FormatSpeed(app, b.top_speed_kmh),
+            kw);
         for (int s = 0; s < 3; ++s) {
             ImGui::SetCursorScreenPos(ImVec2(p.x + (kw + gap) * (2 + s), p.y));
             char label[24], id[8], detail[48];
