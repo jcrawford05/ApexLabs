@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "run_result.h"
 #include "textures.h"
 #include "track_setup.h"
 #include "vehicle.h"
@@ -35,6 +36,9 @@ enum class TrackPanel {
     Count,
 };
 
+enum class MapColoring { DeltaVsReference, Speed, ThrottleBrake };
+enum class TraceChannel { Speed, Throttle, Brake, TireTemp };
+
 struct App {
     Screen screen = Screen::Start;
     CarPanel car_panel = CarPanel::Aerodynamics;
@@ -49,6 +53,14 @@ struct App {
     SurfaceSettings surface;
     SimulationSettings sim;
     SetupPreferences prefs;
+    RunResult run = MakeSampleRun();
+
+    MapColoring map_coloring = MapColoring::DeltaVsReference;
+    TraceChannel trace_channel = TraceChannel::Speed;
+    int open_section = -1;
+    int hover_section = -1;
+    int compare_a = 42;
+    int compare_b = 41;
 
     std::string toast;
     double toast_until = 0.0;
@@ -71,4 +83,5 @@ struct App {
 
 void DrawStartScreen(App& app);
 void DrawSetupScreen(App& app);
+void DrawResultsScreen(App& app);
 void DrawTopNav(App& app, const char* right_label);

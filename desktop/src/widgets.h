@@ -18,6 +18,12 @@ void TextAt(
     float size,
     ImU32 color,
     const char* text);
+void TextWrapped(
+    Face face,
+    float size,
+    ImU32 color,
+    const char* text,
+    float wrap_width = 0.0F);
 void KeyValue(
     const char* key,
     const char* value,
@@ -53,6 +59,7 @@ void IconWeather(
     ImVec2 top_left,
     float scale,
     bool rain);
+void IconClose(ImDrawList* draw_list, ImVec2 center, float size, ImU32 color);
 
 struct PillStyle {
     float pad_x = 10.0F;
@@ -86,6 +93,18 @@ bool SetupSlider(
     float step = 0.0F);
 void SectionLabel(const char* text);
 bool BigRedButton(const char* id, const char* label, ImVec2 size);
+
+// ---- "App" palette widgets (Results, and later Settings) ---------------------
+enum class ButtonKind { Primary, Outline, Danger, Subtle };
+bool Button(
+    const char* id,
+    const char* label,
+    ButtonKind kind,
+    float font_size = 14.0F,
+    float pad_x = 16.0F,
+    float pad_y = 10.0F);
+bool Chip(const char* id, const char* label, bool selected);
+void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
 
 bool HitArea(
     const char* id,

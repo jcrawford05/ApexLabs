@@ -25,6 +25,7 @@ struct Track {
     int Corners() const;
     float LongestStraightM() const;
     const char* Character() const;
+    float SegmentStartM(int index) const;
 };
 
 enum class WeatherPreset { Dry, Overcast, LightRain, Wet };
@@ -50,14 +51,18 @@ struct SimulationSettings {
     float fuel_kg = 30.0F;
 };
 
-// App-wide defaults the Simulation panel reads until Settings is migrated.
+// App-wide defaults the Simulation / Results screens read until Settings is
+// migrated.
 struct SetupPreferences {
     int time_step = 1;  // 0 = 1 ms, 1 = 5 ms, 2 = 10 ms
     float telemetry_spacing_m = 5.0F;
+    float neutral_band_s = 0.05F;
+    bool show_section_numbers = true;
 };
 
 Track MakeDemoCircuit();
 const char* WeatherPresetName(WeatherPreset preset);
+const char* SegmentTypeName(SegmentType type);
 
 // Sample Run #42 lap time used by Surface estimates until results data loads.
 inline constexpr float kSampleLapTimeS = 78.432F;
