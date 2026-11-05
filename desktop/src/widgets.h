@@ -104,6 +104,7 @@ bool Button(
     float pad_x = 16.0F,
     float pad_y = 10.0F);
 bool Chip(const char* id, const char* label, bool selected);
+bool Toggle(const char* id, bool* value);
 void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
 
 bool HitArea(

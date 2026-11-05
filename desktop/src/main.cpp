@@ -107,7 +107,7 @@ int main(int, char**) {
 
     App app;
     std::string error;
-    if (!app.Init(renderer, base_directory, error)) {
+    if (!app.Init(window, renderer, base_directory, error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         Shutdown(window, renderer);
         return 1;
@@ -124,6 +124,15 @@ int main(int, char**) {
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                 event.window.windowID == SDL_GetWindowID(window)) {
                 running = false;
+            }
+            // .json dropped on the window, or picked in the Import dialog.
+            if (event.type == SDL_EVENT_DROP_FILE && event.drop.data) {
+                app.ImportFile(event.drop.data);
+            }
+            if (app.import_event != 0 && event.type == app.import_event &&
+                event.user.data1) {
+                app.ImportFile(static_cast<const char*>(event.user.data1));
+                SDL_free(event.user.data1);
             }
         }
 

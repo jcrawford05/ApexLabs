@@ -59,8 +59,11 @@ Car & Track Setup is migrated for its four-column configuration UI: all five
 car panels, all four track panels, Run Simulation, Previous/Next stepping,
 and in-memory Reset/Save Setup. Results is migrated against sample Run #42:
 header and KPIs, interactive track map with coloring modes, section times
-table, telemetry chart, and section detail popup. Import / Export,
-Comparison, and Settings still show migration placeholders.
+table, telemetry chart, and section detail popup. Import / Export is
+migrated for its four-card layout (import drop zone, export rows, run
+history, activity log) against live setup/run state and sample history;
+JSON file I/O is still stubbed. Comparison and Settings still show
+migration placeholders.
 
 ## Current scope
 
@@ -77,7 +80,11 @@ This phase contains only:
 - Demo Circuit map geometry and sample track / weather defaults
 - Results fed by embedded sample Run #42 (map, section table, telemetry chart,
   section popup; no physics yet)
-- The Results / app color palette and app-palette Button / Chip (shared Space / Plex fonts)
+- Import / Export UI with sample run history and session activity logging
+- Native Import file picker via SDL3 dialogs (Windows / macOS), plus drag-and-drop
+  onto the window; JSON parse/apply is not connected yet
+- The Results / app color palette and app-palette Button / Chip / Toggle
+  (shared Space / Plex fonts)
 - Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
 - Explicit placeholders for screens that have not yet been migrated
 - Ordered ImGui, renderer, window, and SDL cleanup
@@ -94,10 +101,11 @@ adapted from the existing team development workspace:
 - Source commit: `c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0`
 - Source files: `src/main.cpp`, `src/app.cpp`, `src/screens/start_screen.cpp`,
   `src/screens/setup_screen.cpp`, `src/screens/results_screen.cpp`,
-  `src/widgets.cpp`, `src/theme.cpp`, `src/textures.cpp`, `src/track_map.*`,
-  and the setup / run-result subset of `src/data.*`
+  `src/screens/import_export_screen.cpp`, `src/widgets.cpp`, `src/theme.cpp`,
+  `src/textures.cpp`, `src/track_map.*`, and the setup / run-result subset of
+  `src/data.*`
 
-Only the Start Screen, the full Car & Track Setup configuration UI, the
-Results screen, and the minimum support code they require were ported.
-Existing source authorship is preserved through this reference; this phase
-does not claim the full frontend has been migrated.
+Only the Start Screen, Car & Track Setup, Results, Import / Export, and the
+minimum support code they require were ported. Existing source authorship is
+preserved through this reference; this phase does not claim the full frontend
+has been migrated.
