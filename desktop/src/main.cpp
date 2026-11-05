@@ -1,0 +1,135 @@
+// Apex Lab desktop foundation: SDL3 window + SDL_Renderer3 + Dear ImGui.
+//
+// Initialization and shutdown flow adapted from the existing team prototype:
+// C:/Users/cesar/Documents/ApexLabsDevSpace at commit
+// c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
+
+#include <cstdio>
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
+
+namespace {
+
+constexpr int kWindowWidth = 960;
+constexpr int kWindowHeight = 640;
+
+void Shutdown(SDL_Window* window, SDL_Renderer* renderer) {
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+}  // namespace
+
+int main(int, char**) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    SDL_Window* window = SDL_CreateWindow(
+        "Apex Lab",
+        kWindowWidth,
+        kWindowHeight,
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    if (!window) {
+        std::fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        std::fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_SetRenderVSync(renderer, 1);
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_ShowWindow(window);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
+
+    if (!ImGui_ImplSDL3_InitForSDLRenderer(window, renderer)) {
+        std::fprintf(stderr, "Dear ImGui SDL3 backend initialization failed.\n");
+        ImGui::DestroyContext();
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    if (!ImGui_ImplSDLRenderer3_Init(renderer)) {
+        std::fprintf(stderr, "Dear ImGui SDL_Renderer3 backend initialization failed.\n");
+        ImGui_ImplSDL3_Shutdown();
+        ImGui::DestroyContext();
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    bool running = true;
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL3_ProcessEvent(&event);
+            if (event.type == SDL_EVENT_QUIT) {
+                running = false;
+            }
+            if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+                event.window.windowID == SDL_GetWindowID(window)) {
+                running = false;
+            }
+        }
+
+        if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED) {
+            SDL_Delay(10);
+            continue;
+        }
+
+        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::SetNextWindowPos(ImVec2(32.0F, 32.0F), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(440.0F, 210.0F), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Apex Lab");
+        ImGui::TextUnformatted("Apex Lab");
+        ImGui::TextUnformatted("Desktop UI Prototype");
+        ImGui::Spacing();
+        ImGui::TextUnformatted("SDL3 + Dear ImGui initialized successfully");
+        ImGui::Spacing();
+        if (ImGui::Button("Close")) {
+            running = false;
+        }
+        ImGui::End();
+
+        ImGui::Render();
+        SDL_SetRenderScale(
+            renderer,
+            io.DisplayFramebufferScale.x,
+            io.DisplayFramebufferScale.y);
+        SDL_SetRenderDrawColor(renderer, 18, 18, 22, 255);
+        SDL_RenderClear(renderer);
+        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+        SDL_RenderPresent(renderer);
+    }
+
+    Shutdown(window, renderer);
+    return 0;
+}
