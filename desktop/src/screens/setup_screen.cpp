@@ -43,6 +43,43 @@ const char* const kTrackSubtitles[] = {
     "Laps, start & fuel",
 };
 
+// ImGui's default wheel scroll jumps by coarse steps. Own the wheel here and
+// ease ScrollY toward a target so the Aerodynamics (and sibling) panels feel
+// continuous, especially on trackpads.
+void ApplySmoothPanelScroll() {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuiStorage* storage = ImGui::GetStateStorage();
+    const ImGuiID target_id = ImGui::GetID("smooth_scroll_target");
+    const ImGuiID last_id = ImGui::GetID("smooth_scroll_last");
+
+    const float scroll = ImGui::GetScrollY();
+    const float max_scroll = ImGui::GetScrollMaxY();
+    float target = storage->GetFloat(target_id, scroll);
+    const float last_set = storage->GetFloat(last_id, scroll);
+
+    // Scrollbar drag updates ScrollY directly; keep the eased target in sync.
+    if (std::fabs(scroll - last_set) > 0.5F && io.MouseWheel == 0.0F) {
+        target = scroll;
+    }
+
+    // Include nested BeginCard children; plain IsWindowHovered() is false when
+    // the cursor is over FRONT AERO / REAR / summary groups.
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+        io.MouseWheel != 0.0F) {
+        constexpr float kPixelsPerWheelUnit = 56.0F;
+        target -= io.MouseWheel * kPixelsPerWheelUnit;
+    }
+
+    target = std::clamp(target, 0.0F, std::max(max_scroll, 0.0F));
+    constexpr float kSmoothing = 16.0F;
+    const float blend = 1.0F - std::exp(-kSmoothing * io.DeltaTime);
+    const float next = scroll + (target - scroll) * blend;
+    ImGui::SetScrollY(next);
+
+    storage->SetFloat(target_id, target);
+    storage->SetFloat(last_id, next);
+}
+
 void BeginPanel(const char* id, ImVec2 position, ImVec2 size, ImVec2 padding) {
     ImGui::SetCursorScreenPos(position);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, setup::kPanel);
@@ -53,10 +90,12 @@ void BeginPanel(const char* id, ImVec2 position, ImVec2 size, ImVec2 padding) {
     ImGui::BeginChild(
         id,
         size,
-        ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
+        ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding,
+        ImGuiWindowFlags_NoScrollWithMouse);
 }
 
 void EndPanel() {
+    ApplySmoothPanelScroll();
     ImGui::EndChild();
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor(2);
