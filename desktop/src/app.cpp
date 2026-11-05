@@ -88,7 +88,11 @@ void App::Frame() {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, theme::setup::kBg);
+    const ImU32 background =
+        (screen == Screen::Start || screen == Screen::CarSetup)
+            ? theme::setup::kBg
+            : theme::app::kBg;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, background);
     ImGui::Begin(
         "##root",
         nullptr,
@@ -107,6 +111,8 @@ void App::Frame() {
             DrawSetupScreen(*this);
             break;
         case Screen::Results:
+            DrawResultsScreen(*this);
+            break;
         case Screen::ImportExport:
         case Screen::Compare:
         case Screen::Settings:
@@ -166,6 +172,10 @@ void App::Frame() {
 }
 
 void App::GoTo(Screen destination) {
+    if (destination == Screen::Results && screen != Screen::Results) {
+        map_coloring = MapColoring::DeltaVsReference;
+        open_section = -1;
+    }
     screen = destination;
 }
 

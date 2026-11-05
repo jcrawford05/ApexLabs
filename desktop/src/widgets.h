@@ -87,6 +87,18 @@ bool SetupSlider(
 void SectionLabel(const char* text);
 bool BigRedButton(const char* id, const char* label, ImVec2 size);
 
+// ---- "App" palette widgets (Results, and later Settings) ---------------------
+enum class ButtonKind { Primary, Outline, Danger, Subtle };
+bool Button(
+    const char* id,
+    const char* label,
+    ButtonKind kind,
+    float font_size = 14.0F,
+    float pad_x = 16.0F,
+    float pad_y = 10.0F);
+bool Chip(const char* id, const char* label, bool selected);
+void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
+
 bool HitArea(
     const char* id,
     ImVec2 size,

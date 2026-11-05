@@ -23,10 +23,10 @@ constexpr FontFile kFiles[] = {
 };
 
 const std::map<Face, std::vector<float>> kSizes = {
-    {Face::SpaceBold, {15, 17, 18, 24}},
+    {Face::SpaceBold, {15, 17, 18, 24, 28}},
     {Face::SpaceMedium, {18}},
-    {Face::PlexRegular, {8, 9, 10, 11, 13, 14}},
-    {Face::PlexSemiBold, {9, 10, 11, 12, 13, 14, 20}},
+    {Face::PlexRegular, {8, 9, 10, 11, 12, 13, 14}},
+    {Face::PlexSemiBold, {9, 10, 11, 12, 13, 14, 16, 18, 20}},
 };
 
 std::map<std::pair<Face, int>, ImFont*> g_fonts;

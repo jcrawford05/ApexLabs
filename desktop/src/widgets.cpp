@@ -524,6 +524,109 @@ bool BigRedButton(const char* id, const char* label, ImVec2 size) {
     return pressed;
 }
 
+bool Button(
+    const char* id,
+    const char* label,
+    ButtonKind kind,
+    float font_size,
+    float pad_x,
+    float pad_y) {
+    const bool subtle = kind == ButtonKind::Subtle;
+    const Face face = subtle ? Face::PlexSemiBold : Face::PlexSemiBold;
+    const bool outlined =
+        kind == ButtonKind::Outline || kind == ButtonKind::Danger;
+    const ImVec2 text_size = TextSize(face, font_size, label);
+    const float border = outlined ? 1.0F : 0.0F;
+    const ImVec2 size(
+        text_size.x + pad_x * 2.0F + border * 2.0F,
+        text_size.y + pad_y * 2.0F + border * 2.0F);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    bool hovered = false;
+    bool held = false;
+    const bool pressed = HitArea(id, size, &hovered, &held);
+    SetHandCursorIfHovered();
+    ImDrawList* draw_list = DrawList();
+    const ImVec2 end(position.x + size.x, position.y + size.y);
+    ImU32 text = theme::app::kText;
+    switch (kind) {
+        case ButtonKind::Primary:
+            draw_list->AddRectFilled(
+                position,
+                end,
+                held ? theme::kRedDark
+                     : (hovered ? theme::Hex(0xF2160F) : theme::kRed),
+                8.0F);
+            break;
+        case ButtonKind::Outline:
+            if (hovered) {
+                draw_list->AddRectFilled(
+                    position, end, theme::app::kRaised, 8.0F);
+            }
+            draw_list->AddRect(
+                position,
+                end,
+                hovered ? theme::Hex(0x4A4A52) : theme::app::kControlBorder,
+                8.0F);
+            break;
+        case ButtonKind::Danger:
+            if (hovered) {
+                draw_list->AddRectFilled(
+                    position, end, theme::Hex(0xE10600, 28), 8.0F);
+            }
+            draw_list->AddRect(position, end, theme::kRed, 8.0F);
+            text = theme::app::kLost;
+            break;
+        case ButtonKind::Subtle:
+            draw_list->AddRectFilled(
+                position,
+                end,
+                hovered ? theme::Hex(0x2A2A30) : theme::app::kRaised,
+                8.0F);
+            text = hovered ? theme::app::kText : theme::app::kMuted;
+            break;
+    }
+    TextAt(
+        draw_list,
+        ImVec2(position.x + border + pad_x, position.y + border + pad_y),
+        face,
+        font_size,
+        text,
+        label);
+    return pressed;
+}
+
+bool Chip(const char* id, const char* label, bool selected) {
+    const ImVec2 text_size = TextSize(Face::PlexSemiBold, 12.0F, label);
+    const ImVec2 size(text_size.x + 24.0F, text_size.y + 12.0F);
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    bool hovered = false;
+    const bool pressed = HitArea(id, size, &hovered);
+    SetHandCursorIfHovered();
+    const ImU32 background = selected
+        ? theme::kRed
+        : (hovered ? theme::Hex(0x2A2A30) : theme::app::kRaised);
+    const ImU32 text = selected
+        ? theme::kWhite
+        : (hovered ? theme::app::kText : theme::app::kMuted);
+    DrawList()->AddRectFilled(
+        position,
+        ImVec2(position.x + size.x, position.y + size.y),
+        background,
+        size.y * 0.5F);
+    TextAt(
+        DrawList(),
+        ImVec2(position.x + 12.0F, position.y + 6.0F),
+        Face::PlexSemiBold,
+        12.0F,
+        text,
+        label);
+    return pressed;
+}
+
+void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color) {
+    draw_list->AddCircleFilled(center, radius, color, 16);
+}
+
 bool HitArea(const char* id, ImVec2 size, bool* hovered, bool* held) {
     const bool pressed = ImGui::InvisibleButton(
         id,

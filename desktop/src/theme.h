@@ -1,5 +1,7 @@
-// Start Screen and Car & Track Setup colors, fonts, and ImGui style for Apex Lab.
+// Start Screen, Car & Track Setup, and Results colors/fonts for Apex Lab.
 // Adapted from ApexLabsDevSpace at commit c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
+// All migrated screens share Space Grotesk + IBM Plex Sans. Start/Setup use the
+// "setup" palette; Results uses the "app" palette. Both share Apex Red.
 #pragma once
 
 #include <cstdint>
@@ -72,6 +74,22 @@ inline constexpr ImU32 kMenuSub = Hex(0x737985);
 inline constexpr ImU32 kMenuArrow = Hex(0x777D87);
 inline constexpr ImU32 kMenuSubActive = Hex(0xFFD5D3);
 }  // namespace setup
+
+// Results (+ later Settings) ("app" palette)
+namespace app {
+inline constexpr ImU32 kBg = Hex(0x0E0E10);
+inline constexpr ImU32 kCard = Hex(0x17171A);
+inline constexpr ImU32 kCardBorder = Hex(0x2A2A30);
+inline constexpr ImU32 kRaised = Hex(0x212126);
+inline constexpr ImU32 kControlBorder = Hex(0x3A3A42);
+inline constexpr ImU32 kText = Hex(0xF4F4F5);
+inline constexpr ImU32 kTextSoft = Hex(0xC9C9D0);
+inline constexpr ImU32 kMuted = Hex(0x9A9AA3);
+inline constexpr ImU32 kGained = Hex(0x2ECC71);
+inline constexpr ImU32 kNeutral = Hex(0xF5B700);
+inline constexpr ImU32 kLost = Hex(0xFF5A36);
+inline constexpr ImU32 kScrim = Hex(0x000000, 166);
+}  // namespace app
 
 enum class Face {
     SpaceBold,

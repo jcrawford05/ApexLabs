@@ -63,6 +63,8 @@ target_link_libraries(apex_imgui PUBLIC SDL3::SDL3)
 add_executable(apex_lab_desktop
   src/app.cpp
   src/main.cpp
+  src/run_result.cpp
+  src/screens/results_screen.cpp
   src/screens/setup_screen.cpp
   src/screens/start_screen.cpp
   src/theme.cpp

@@ -31,6 +31,15 @@ float Track::LengthM() const {
     return total;
 }
 
+float Track::SegmentStartM(int index) const {
+    float start = 0.0F;
+    const int count = static_cast<int>(segments.size());
+    for (int i = 0; i < index && i < count; ++i) {
+        start += segments[static_cast<size_t>(i)].length_m;
+    }
+    return start;
+}
+
 int Track::Corners() const {
     return static_cast<int>(std::count_if(
         segments.begin(),
