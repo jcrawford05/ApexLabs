@@ -1,11 +1,13 @@
 // Car & Track Setup migration from ApexLabsDevSpace commit
 // c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0 (Figma 1440 x 900).
 //
-// Current slice: shell plus the Aerodynamics car panel. Remaining car/track
-// panels stay as placeholders until later slices.
+// Current slice: shell plus all five car setup panels. Track panels stay as
+// placeholders until later slices.
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <string>
 
 #include "app.h"
 #include "imgui.h"
@@ -199,20 +201,51 @@ void DetailPlaceholder(const char* title, const char* message) {
     ui::Text(Face::PlexRegular, 10.0F, setup::kMuted, message);
 }
 
-const char* CarPanelTitle(CarPanel panel) {
-    const int index = static_cast<int>(panel);
-    if (index >= 0 && index < static_cast<int>(CarPanel::Count)) {
-        return kCarTitles[index];
-    }
-    return "Car Setup";
-}
-
 const char* TrackPanelTitle(TrackPanel panel) {
     const int index = static_cast<int>(panel);
     if (index >= 0 && index < static_cast<int>(TrackPanel::Count)) {
         return kTrackTitles[index];
     }
     return "Track Setup";
+}
+
+void SummaryTitle(const char* text) {
+    ui::Text(Face::PlexSemiBold, 9.0F, Hex(0x646B76), text);
+}
+
+int IndexOf(
+    const char* const* items,
+    int count,
+    const std::string& value,
+    int fallback) {
+    for (int i = 0; i < count; ++i) {
+        if (value == items[i]) {
+            return i;
+        }
+    }
+    return fallback;
+}
+
+bool PillChoice(
+    const char* id,
+    const char* const* items,
+    int count,
+    int* selected) {
+    bool changed = false;
+    ImGui::PushID(id);
+    for (int i = 0; i < count; ++i) {
+        if (i) {
+            ImGui::SameLine(0.0F, 8.0F);
+        }
+        ImGui::PushID(i);
+        if (ui::Pill("##p", items[i], *selected == i) && *selected != i) {
+            *selected = i;
+            changed = true;
+        }
+        ImGui::PopID();
+    }
+    ImGui::PopID();
+    return changed;
 }
 
 void AerodynamicsPanel(App& app) {
@@ -292,18 +325,357 @@ void AerodynamicsPanel(App& app) {
     EndGroup();
 }
 
+void TiresPanel(App& app) {
+    Vehicle& vehicle = app.vehicle;
+    const TireCompound& tire = vehicle.SelectedTire();
+    PanelHeader(
+        "Tires",
+        "Configure compound, pressures, temperatures, and wear.",
+        nullptr,
+        18.0F);
+
+    BeginGroup("##compound");
+    ui::SectionLabel("COMPOUND");
+    ui::Space(12.0F);
+    for (int i = 0; i < TireCatalogCount(); ++i) {
+        if (i) {
+            ImGui::SameLine(0.0F, 8.0F);
+        }
+        ImGui::PushID(i);
+        if (ui::Pill("##c", TireAt(i).short_name, vehicle.compound == i)) {
+            vehicle.compound = i;
+        }
+        ImGui::PopID();
+    }
+    ui::Space(12.0F);
+    KV("Estimated grip", tire.grip, std::strcmp(tire.grip, "High") == 0);
+    ui::Space(12.0F);
+    KV(
+        "Expected durability",
+        tire.durability,
+        std::strcmp(tire.durability, "Low") == 0);
+    ui::Space(12.0F);
+    KV("Warm-up", tire.warm_up);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##pressures");
+    ui::SectionLabel("PRESSURES");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##pf",
+        "Front pressure",
+        &vehicle.pressure_front_psi,
+        20.0F,
+        26.0F,
+        "%.1f psi",
+        "20 psi",
+        "26 psi",
+        false,
+        0.1F);
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##pr",
+        "Rear pressure",
+        &vehicle.pressure_rear_psi,
+        20.0F,
+        26.0F,
+        "%.1f psi",
+        "20 psi",
+        "26 psi",
+        false,
+        0.1F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##tiresummary", true);
+    ui::Text(Face::PlexSemiBold, 9.0F, Hex(0x646B76), "PROJECTED TIRE BEHAVIOR");
+    ui::Space(12.0F);
+    KV("Peak grip window", tire.peak_window);
+    ui::Space(12.0F);
+    char life[32];
+    std::snprintf(life, sizeof(life), "%d laps", tire.life_laps);
+    KV("Estimated life", life);
+    ui::Space(12.0F);
+    KV(
+        "Degradation",
+        tire.degradation,
+        std::strcmp(tire.degradation, "High") == 0);
+    ui::Space(12.0F);
+    char mass[32];
+    std::snprintf(mass, sizeof(mass), "%.0f kg", tire.mass_kg);
+    KV("Mass contribution", mass);
+    EndGroup();
+}
+
+void PowertrainPanel(App& app) {
+    Vehicle& vehicle = app.vehicle;
+    static const char* const kMaps[] = {"Qualifying", "Race", "Save"};
+    static const float kPower[] = {1.0F, 0.97F, 0.92F};
+    static const char* const kFuel[] = {"High", "Medium", "Low"};
+    int map = IndexOf(kMaps, 3, vehicle.power_map, 1);
+    char buffer[64];
+
+    PanelHeader(
+        "Powertrain",
+        "Set engine power delivery and gearing.",
+        map == 0 ? "MAX POWER" : nullptr,
+        18.0F);
+
+    BeginGroup("##map");
+    ui::SectionLabel("POWER MAP");
+    ui::Space(12.0F);
+    if (PillChoice("##maps", kMaps, 3, &map)) {
+        vehicle.power_map = kMaps[map];
+    }
+    ui::Space(10.0F);
+    ui::Text(
+        Face::PlexRegular,
+        9.0F,
+        setup::kMuted,
+        map == 0 ? "Full power for one lap. Not allowed for long runs."
+        : map == 1 ? "Default race mode, balanced against fuel use."
+                   : "Lower power to save fuel and engine life.");
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##gearing");
+    ui::SectionLabel("GEARING");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##fd",
+        "Final drive ratio",
+        &vehicle.final_drive,
+        2.8F,
+        3.6F,
+        "%.2f",
+        "Long",
+        "Short",
+        false,
+        0.05F);
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##shift",
+        "Shift point",
+        &vehicle.shift_rpm,
+        10500.0F,
+        vehicle.engine_max_rpm,
+        "%.0f rpm",
+        "10,500",
+        "15,000",
+        false,
+        100.0F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##ptsummary", true);
+    SummaryTitle("PROJECTED OUTPUT");
+    ui::Space(12.0F);
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%.0f kW",
+        vehicle.engine_peak_kw * kPower[map]);
+    KV("Peak power", buffer);
+    ui::Space(12.0F);
+    // Speed at the rev limit in top gear scales with 1 / final drive
+    // (340 km/h at 3.20), matching DevSpace setup_screen.cpp.
+    const float limit_kmh = 340.0F * 3.2F / vehicle.final_drive *
+        (vehicle.shift_rpm / vehicle.engine_max_rpm);
+    std::snprintf(buffer, sizeof(buffer), "%.0f km/h", limit_kmh);
+    constexpr float kSampleTopSpeedKmh = 317.0F;
+    KV("Top-gear speed limit", buffer, limit_kmh < kSampleTopSpeedKmh + 5.0F);
+    ui::Space(12.0F);
+    KV("Fuel use", kFuel[map], map == 0);
+    ui::Space(12.0F);
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%s, %.0f kg",
+        vehicle.engine_name.c_str(),
+        vehicle.engine_mass_kg);
+    KV("Engine", buffer);
+    EndGroup();
+}
+
+void ChassisPanel(App& app) {
+    Vehicle& vehicle = app.vehicle;
+    char buffer[64];
+    PanelHeader(
+        "Chassis",
+        "Place ballast and set the rear ride height.",
+        nullptr,
+        18.0F);
+
+    BeginGroup("##ballast");
+    ui::SectionLabel("BALLAST");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##ballast",
+        "Ballast",
+        &vehicle.ballast_kg,
+        0.0F,
+        20.0F,
+        "%.0f kg",
+        "0 kg",
+        "20 kg",
+        false,
+        1.0F);
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##bpos",
+        "Ballast position",
+        &vehicle.ballast_front_pct,
+        30.0F,
+        70.0F,
+        "%.0f%% front",
+        "Rear",
+        "Front",
+        false,
+        1.0F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##ride");
+    ui::SectionLabel("RIDE HEIGHT");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##rrh",
+        "Rear ride height",
+        &vehicle.rear_ride_height_mm,
+        60.0F,
+        100.0F,
+        "%.0f mm",
+        "60 mm",
+        "100 mm",
+        false,
+        1.0F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##chsummary", true);
+    SummaryTitle("CURRENT CONFIGURATION");
+    ui::Space(12.0F);
+    const float mass = vehicle.TotalMassKg();
+    std::snprintf(buffer, sizeof(buffer), "%.0f kg", mass);
+    KV("Car mass", buffer);
+    ui::Space(12.0F);
+    // Without ballast the car is 45.5% front; ballast shifts that toward
+    // where it sits.
+    const float front =
+        ((mass - vehicle.ballast_kg) * 0.455F +
+         vehicle.ballast_kg * vehicle.ballast_front_pct / 100.0F) /
+        mass;
+    std::snprintf(buffer, sizeof(buffer), "%.1f%% front", front * 100.0F);
+    KV("Weight distribution", buffer);
+    ui::Space(12.0F);
+    const float rake =
+        std::atan(
+            (vehicle.rear_ride_height_mm - vehicle.front_ride_height_mm) /
+            (vehicle.wheelbase_m * 1000.0F)) *
+        57.2958F;
+    std::snprintf(buffer, sizeof(buffer), "%.2f\xC2\xB0", rake);
+    KV("Rake", buffer, rake > 1.0F);
+    ui::Space(12.0F);
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%.2f m / %.2f m",
+        vehicle.wheelbase_m,
+        vehicle.cg_height_m);
+    KV("Wheelbase / CG height", buffer);
+    EndGroup();
+}
+
+void BrakesPanel(App& app) {
+    Vehicle& vehicle = app.vehicle;
+    static const char* const kCooling[] = {"Closed", "Standard", "Open"};
+    int cooling = IndexOf(kCooling, 3, vehicle.brake_cooling, 1);
+    char buffer[64];
+    PanelHeader(
+        "Brakes",
+        "Balance braking front to rear and size the cooling ducts.",
+        nullptr,
+        18.0F);
+
+    BeginGroup("##bias");
+    ui::SectionLabel("BRAKE BIAS");
+    ui::Space(12.0F);
+    ui::SetupSlider(
+        "##bias",
+        "Front bias",
+        &vehicle.brake_bias_front_pct,
+        50.0F,
+        65.0F,
+        "%.1f%%",
+        "50% (rear)",
+        "65% (front)",
+        false,
+        0.5F);
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##cooling");
+    ui::SectionLabel("COOLING DUCTS");
+    ui::Space(12.0F);
+    if (PillChoice("##cool", kCooling, 3, &cooling)) {
+        vehicle.brake_cooling = kCooling[cooling];
+    }
+    EndGroup();
+    ui::Space(13.0F);
+
+    BeginGroup("##brsummary", true);
+    SummaryTitle("PROJECTED BRAKING");
+    ui::Space(12.0F);
+    std::snprintf(buffer, sizeof(buffer), "%.1f g", vehicle.brakes_max_decel_g);
+    KV("Max deceleration", buffer);
+    ui::Space(12.0F);
+    const char* balance = vehicle.brake_bias_front_pct > 60.0F
+        ? "Front lock-up risk"
+        : vehicle.brake_bias_front_pct < 53.0F ? "Rear unstable"
+                                               : "Balanced";
+    KV(
+        "Balance",
+        balance,
+        vehicle.brake_bias_front_pct > 60.0F ||
+            vehicle.brake_bias_front_pct < 53.0F);
+    ui::Space(12.0F);
+    static const char* const kTemp[] = {
+        "High, fast warm-up",
+        "In window",
+        "Low, slow warm-up",
+    };
+    KV("Brake temperature", kTemp[cooling], cooling != 1);
+    ui::Space(12.0F);
+    static const char* const kDrag[] = {"Lowest", "Low", "Higher"};
+    KV("Duct drag", kDrag[cooling], cooling == 2);
+    ui::Space(12.0F);
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%s, %.0f kg",
+        vehicle.brakes_name.c_str(),
+        vehicle.brakes_mass_kg);
+    KV("Brakes", buffer);
+    EndGroup();
+}
+
 void DrawCarDetail(App& app) {
     switch (app.car_panel) {
         case CarPanel::Aerodynamics:
             AerodynamicsPanel(app);
             break;
         case CarPanel::Tires:
+            TiresPanel(app);
+            break;
         case CarPanel::Powertrain:
+            PowertrainPanel(app);
+            break;
         case CarPanel::Chassis:
+            ChassisPanel(app);
+            break;
         case CarPanel::Brakes:
-            DetailPlaceholder(
-                CarPanelTitle(app.car_panel),
-                "This panel will host the selected car setup controls.");
+            BrakesPanel(app);
             break;
         case CarPanel::Count:
             break;

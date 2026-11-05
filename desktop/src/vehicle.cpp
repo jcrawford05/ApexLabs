@@ -1,8 +1,61 @@
 #include "vehicle.h"
 
+#include <algorithm>
+
+namespace {
+
+constexpr TireCompound kTires[] = {
+    {"Soft Compound",
+     "Soft",
+     44.0F,
+     "High",
+     "Low",
+     "Fast",
+     "High",
+     "Laps 2-7",
+     18},
+    {"Medium Compound",
+     "Medium",
+     46.0F,
+     "Medium",
+     "Medium",
+     "Medium",
+     "Medium",
+     "Laps 3-14",
+     30},
+    {"Hard Compound",
+     "Hard",
+     48.0F,
+     "Low",
+     "High",
+     "Slow",
+     "Low",
+     "Laps 5-25",
+     45},
+};
+
+}  // namespace
+
+const TireCompound* TireCatalog() {
+    return kTires;
+}
+
+int TireCatalogCount() {
+    return static_cast<int>(sizeof(kTires) / sizeof(kTires[0]));
+}
+
+const TireCompound& TireAt(int index) {
+    const int clamped = std::clamp(index, 0, TireCatalogCount() - 1);
+    return kTires[clamped];
+}
+
+const TireCompound& Vehicle::SelectedTire() const {
+    return TireAt(compound);
+}
+
 float Vehicle::TotalMassKg() const {
     return chassis_mass_kg + engine_mass_kg + aero_mass_kg + brakes_mass_kg +
-           tire_mass_kg + ballast_kg;
+           SelectedTire().mass_kg + ballast_kg;
 }
 
 const char* Vehicle::DragTendency() const {
