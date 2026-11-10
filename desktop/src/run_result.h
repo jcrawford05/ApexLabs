@@ -80,6 +80,4 @@ std::vector<RunSummary> MakeSampleHistory();
 
 std::string FormatLapTime(float seconds);  // 1:18.432
 std::string FormatDelta(float seconds);    // +0.22 s, −0.08 s, ±0.00 s
-std::string FormatSpeed(float kmh, bool with_unit = true);
-std::string FormatTemp(float celsius);
 std::string FileSlug(const std::string& name);

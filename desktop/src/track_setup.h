@@ -51,16 +51,6 @@ struct SimulationSettings {
     float fuel_kg = 30.0F;
 };
 
-// App-wide defaults the Simulation / Results screens read until Settings is
-// migrated.
-struct SetupPreferences {
-    int time_step = 1;  // 0 = 1 ms, 1 = 5 ms, 2 = 10 ms
-    float telemetry_spacing_m = 5.0F;
-    float neutral_band_s = 0.05F;
-    bool show_section_numbers = true;
-    bool telemetry_in_exports = false;
-};
-
 Track MakeDemoCircuit();
 const char* WeatherPresetName(WeatherPreset preset);
 const char* SegmentTypeName(SegmentType type);

@@ -470,7 +470,11 @@ void PowertrainPanel(App& app) {
     // (340 km/h at 3.20), matching DevSpace setup_screen.cpp.
     const float limit_kmh = 340.0F * 3.2F / vehicle.final_drive *
         (vehicle.shift_rpm / vehicle.engine_max_rpm);
-    std::snprintf(buffer, sizeof(buffer), "%.0f km/h", limit_kmh);
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "%s",
+        FormatSpeed(app, limit_kmh).c_str());
     constexpr float kSampleTopSpeedKmh = 317.0F;
     KV("Top-gear speed limit", buffer, limit_kmh < kSampleTopSpeedKmh + 5.0F);
     ui::Space(8.0F);
@@ -853,9 +857,9 @@ void WeatherPanel(App& app) {
     std::snprintf(
         temps,
         sizeof(temps),
-        "%.0f \xC2\xB0" "C AIR  \xC2\xB7  %.0f \xC2\xB0" "C TRACK",
-        weather.air_c,
-        weather.track_c);
+        "%s AIR  \xC2\xB7  %s TRACK",
+        FormatTemp(app, weather.air_c).c_str(),
+        FormatTemp(app, weather.track_c).c_str());
     ui::TextAt(
         draw_list,
         ImVec2(position.x + 141.0F, position.y + 100.0F),
@@ -893,34 +897,75 @@ void WeatherPanel(App& app) {
     ui::EndCard();
     ui::Space(9.0F);
 
+    const bool fahrenheit = app.prefs.temp_unit == TempUnit::F;
+    const char* temp_suffix = fahrenheit ? "\xC2\xB0" "F" : "\xC2\xB0" "C";
+    float air_display = ConvertTemp(app.prefs.temp_unit, weather.air_c);
+    float track_display = ConvertTemp(app.prefs.temp_unit, weather.track_c);
+    const float air_min = fahrenheit ? ConvertTemp(TempUnit::F, 10.0F) : 10.0F;
+    const float air_max = fahrenheit ? ConvertTemp(TempUnit::F, 40.0F) : 40.0F;
+    const float track_min = fahrenheit ? ConvertTemp(TempUnit::F, 15.0F) : 15.0F;
+    const float track_max = fahrenheit ? ConvertTemp(TempUnit::F, 60.0F) : 60.0F;
+    char air_fmt[24], air_lo[24], air_hi[24];
+    char track_fmt[24], track_lo[24], track_hi[24];
+    std::snprintf(air_fmt, sizeof(air_fmt), "%%.0f %s", temp_suffix);
+    std::snprintf(air_lo, sizeof(air_lo), "%.0f %s", air_min, temp_suffix);
+    std::snprintf(air_hi, sizeof(air_hi), "%.0f %s", air_max, temp_suffix);
+    std::snprintf(track_fmt, sizeof(track_fmt), "%%.0f %s", temp_suffix);
+    std::snprintf(track_lo, sizeof(track_lo), "%.0f %s", track_min, temp_suffix);
+    std::snprintf(track_hi, sizeof(track_hi), "%.0f %s", track_max, temp_suffix);
+
     ui::BeginCard("##temps", setup::kGroup, setup::kGroupBorder, 9.0F, ImVec2(10, 8));
     ui::SectionLabel("TEMPERATURE");
     ui::Space(7.0F);
-    ui::SetupSlider(
-        "##air",
-        "Air temperature",
-        &weather.air_c,
-        10.0F,
-        40.0F,
-        "%.0f \xC2\xB0" "C",
-        "10 \xC2\xB0" "C",
-        "40 \xC2\xB0" "C",
-        true,
-        1.0F);
+    if (ui::SetupSlider(
+            "##air",
+            "Air temperature",
+            &air_display,
+            air_min,
+            air_max,
+            air_fmt,
+            air_lo,
+            air_hi,
+            true,
+            1.0F)) {
+        weather.air_c = fahrenheit
+            ? (air_display - 32.0F) * 5.0F / 9.0F
+            : air_display;
+    }
     ui::Space(7.0F);
-    ui::SetupSlider(
-        "##track",
-        "Track temperature",
-        &weather.track_c,
-        15.0F,
-        60.0F,
-        "%.0f \xC2\xB0" "C",
-        "15 \xC2\xB0" "C",
-        "60 \xC2\xB0" "C",
-        true,
-        1.0F);
+    if (ui::SetupSlider(
+            "##track",
+            "Track temperature",
+            &track_display,
+            track_min,
+            track_max,
+            track_fmt,
+            track_lo,
+            track_hi,
+            true,
+            1.0F)) {
+        weather.track_c = fahrenheit
+            ? (track_display - 32.0F) * 5.0F / 9.0F
+            : track_display;
+    }
     ui::EndCard();
     ui::Space(9.0F);
+
+    float wind_display = ConvertSpeed(app.prefs.speed_unit, weather.wind_kmh);
+    const float wind_max =
+        ConvertSpeed(app.prefs.speed_unit, 40.0F);
+    char wind_fmt[32], wind_hi[32];
+    std::snprintf(
+        wind_fmt,
+        sizeof(wind_fmt),
+        "%%.0f %s",
+        SpeedUnitLabel(app.prefs.speed_unit));
+    std::snprintf(
+        wind_hi,
+        sizeof(wind_hi),
+        "%.0f %s",
+        wind_max,
+        SpeedUnitLabel(app.prefs.speed_unit));
 
     ui::BeginCard("##atmo", setup::kGroup, setup::kGroupBorder, 9.0F, ImVec2(10, 8));
     ui::SectionLabel("ATMOSPHERE & PRECIPITATION");
@@ -937,17 +982,29 @@ void WeatherPanel(App& app) {
         true,
         1.0F);
     ui::Space(7.0F);
-    ui::SetupSlider(
-        "##wind",
-        "Wind speed",
-        &weather.wind_kmh,
-        0.0F,
-        40.0F,
-        "%.0f km/h",
-        "0",
-        "40 km/h",
-        true,
-        1.0F);
+    if (ui::SetupSlider(
+            "##wind",
+            "Wind speed",
+            &wind_display,
+            0.0F,
+            wind_max,
+            wind_fmt,
+            "0",
+            wind_hi,
+            true,
+            1.0F)) {
+        switch (app.prefs.speed_unit) {
+            case SpeedUnit::Mph:
+                weather.wind_kmh = wind_display / 0.621371F;
+                break;
+            case SpeedUnit::Ms:
+                weather.wind_kmh = wind_display * 3.6F;
+                break;
+            case SpeedUnit::Kmh:
+                weather.wind_kmh = wind_display;
+                break;
+        }
+    }
     ui::Space(7.0F);
     if (ui::SetupSlider(
             "##rain",

@@ -10,6 +10,109 @@
 #include "theme.h"
 #include "widgets.h"
 
+const char* const kRegulations[] = {
+    "Apex 2026 Default",
+    "Apex 2026 Low Budget",
+    "Open (no limits)",
+};
+const int kRegulationCount = 3;
+const char* const kReferenceLaps[] = {
+    "Previous run, same car and track",
+    "Fastest run, same car and track",
+    "Fastest run, any car on this track",
+    "Pinned run",
+};
+const int kReferenceLapCount = 4;
+const char* const kKeepTelemetry[] = {
+    "Last 10 runs",
+    "Last 50 runs",
+    "Last 200 runs",
+    "All runs",
+};
+const int kKeepTelemetryCount = 4;
+
+int Preferences::DifferencesFrom(const Preferences& other) const {
+    int count = 0;
+    count += regulation != other.regulation;
+    count += time_step != other.time_step;
+    count += telemetry_spacing_m != other.telemetry_spacing_m;
+    count += default_wet != other.default_wet;
+    count += default_air_c != other.default_air_c ||
+        default_track_c != other.default_track_c;
+    count += reference_lap != other.reference_lap;
+    count += speed_unit != other.speed_unit;
+    count += temp_unit != other.temp_unit;
+    count += default_map_coloring != other.default_map_coloring;
+    count += neutral_band_s != other.neutral_band_s;
+    count += show_section_numbers != other.show_section_numbers;
+    count += database_path != other.database_path;
+    count += autosave_runs != other.autosave_runs;
+    count += keep_telemetry != other.keep_telemetry;
+    count += telemetry_in_exports != other.telemetry_in_exports;
+    return count;
+}
+
+const char* SpeedUnitLabel(SpeedUnit unit) {
+    switch (unit) {
+        case SpeedUnit::Kmh:
+            return "km/h";
+        case SpeedUnit::Mph:
+            return "mph";
+        case SpeedUnit::Ms:
+            return "m/s";
+    }
+    return "";
+}
+
+float ConvertSpeed(SpeedUnit unit, float kmh) {
+    switch (unit) {
+        case SpeedUnit::Kmh:
+            return kmh;
+        case SpeedUnit::Mph:
+            return kmh * 0.621371F;
+        case SpeedUnit::Ms:
+            return kmh / 3.6F;
+    }
+    return kmh;
+}
+
+float ConvertTemp(TempUnit unit, float celsius) {
+    if (unit == TempUnit::F) {
+        return celsius * 9.0F / 5.0F + 32.0F;
+    }
+    return celsius;
+}
+
+std::string FormatSpeed(const App& app, float kmh, bool with_unit) {
+    char buffer[32];
+    const float value = ConvertSpeed(app.prefs.speed_unit, kmh);
+    if (with_unit) {
+        std::snprintf(
+            buffer,
+            sizeof(buffer),
+            "%.0f %s",
+            value,
+            SpeedUnitLabel(app.prefs.speed_unit));
+    } else {
+        std::snprintf(buffer, sizeof(buffer), "%.0f", value);
+    }
+    return buffer;
+}
+
+std::string FormatTemp(const App& app, float celsius) {
+    char buffer[32];
+    if (app.prefs.temp_unit == TempUnit::F) {
+        std::snprintf(
+            buffer,
+            sizeof(buffer),
+            "%.0f\xC2\xB0" "F",
+            ConvertTemp(TempUnit::F, celsius));
+    } else {
+        std::snprintf(buffer, sizeof(buffer), "%.0f\xC2\xB0" "C", celsius);
+    }
+    return buffer;
+}
+
 namespace {
 
 std::string NowLabel() {
@@ -30,54 +133,6 @@ void LogActivity(App& app, const std::string& text, bool ok) {
     }
 }
 
-const char* ScreenTitle(Screen screen) {
-    switch (screen) {
-        case Screen::CarSetup:
-            return "Car Setup";
-        case Screen::Results:
-            return "Results";
-        case Screen::ImportExport:
-            return "Import / Export";
-        case Screen::Compare:
-            return "Comparison";
-        case Screen::Settings:
-            return "Settings";
-        case Screen::Start:
-            return "Start";
-    }
-    return "Apex Lab";
-}
-
-void DrawPlaceholderScreen(App& app) {
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    const ImVec2 origin = ImGui::GetWindowPos();
-    const ImVec2 size = ImGui::GetWindowSize();
-
-    draw_list->AddRectFilled(
-        origin,
-        ImVec2(origin.x + size.x, origin.y + 2.0F),
-        theme::kRed);
-    draw_list->AddText(
-        theme::Font(theme::Face::SpaceBold, 24),
-        theme::LineHeight(theme::Face::SpaceBold, 24),
-        ImVec2(origin.x + 64.0F, origin.y + 72.0F),
-        theme::kWhite,
-        ScreenTitle(app.screen));
-    draw_list->AddText(
-        theme::Font(theme::Face::PlexRegular, 14),
-        theme::LineHeight(theme::Face::PlexRegular, 14),
-        ImVec2(origin.x + 64.0F, origin.y + 118.0F),
-        theme::setup::kTagline,
-        "This screen has not yet been migrated.");
-
-    ImGui::SetCursorScreenPos(ImVec2(origin.x + 64.0F, origin.y + 164.0F));
-    ImGui::PushFont(theme::Font(theme::Face::PlexSemiBold, 14));
-    if (ImGui::Button("Back to Home", ImVec2(160.0F, 44.0F))) {
-        app.GoTo(Screen::Start);
-    }
-    ImGui::PopFont();
-}
-
 }  // namespace
 
 bool App::Init(
@@ -86,6 +141,11 @@ bool App::Init(
     const std::string& base_directory,
     std::string& error) {
     window = app_window;
+    saved_prefs = prefs;
+    map_coloring = prefs.default_map_coloring;
+    weather.preset = prefs.default_wet ? WeatherPreset::Wet : WeatherPreset::Dry;
+    weather.air_c = prefs.default_air_c;
+    weather.track_c = prefs.default_track_c;
     import_event = SDL_RegisterEvents(1);
     if (import_event == static_cast<uint32_t>(static_cast<Sint32>(-1))) {
         error = "Could not register the Import file-dialog event.";
@@ -150,7 +210,7 @@ void App::Frame() {
             DrawCompareScreen(*this);
             break;
         case Screen::Settings:
-            DrawPlaceholderScreen(*this);
+            DrawSettingsScreen(*this);
             break;
     }
     ImGui::End();
@@ -207,7 +267,7 @@ void App::Frame() {
 
 void App::GoTo(Screen destination) {
     if (destination == Screen::Results && screen != Screen::Results) {
-        map_coloring = MapColoring::DeltaVsReference;
+        map_coloring = prefs.default_map_coloring;
         open_section = -1;
     }
     screen = destination;

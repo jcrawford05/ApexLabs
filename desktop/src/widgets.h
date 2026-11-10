@@ -106,6 +106,11 @@ bool Button(
     float pad_x = 16.0F,
     float pad_y = 10.0F);
 bool Chip(const char* id, const char* label, bool selected);
+bool Segmented(
+    const char* id,
+    const char* const* items,
+    int count,
+    int* selected);
 bool Toggle(const char* id, bool* value);
 bool Dropdown(
     const char* id,
@@ -113,7 +118,24 @@ bool Dropdown(
     int count,
     int* selected,
     float width);
+bool NumberInput(
+    const char* id,
+    float* value,
+    const char* fmt,
+    const char* unit,
+    float width,
+    float min,
+    float max);
+bool TickSlider(
+    const char* id,
+    float* value,
+    float min,
+    float max,
+    int ticks,
+    float width,
+    float step);
 void StatusDot(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color);
+void Badge(const char* text, ImU32 color);
 
 bool HitArea(
     const char* id,

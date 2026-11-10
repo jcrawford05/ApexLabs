@@ -41,6 +41,46 @@ enum class TrackPanel {
 
 enum class MapColoring { DeltaVsReference, Speed, ThrottleBrake };
 enum class TraceChannel { Speed, Throttle, Brake, TireTemp };
+enum class SpeedUnit { Kmh, Mph, Ms };
+enum class TempUnit { C, F };
+
+// App-wide defaults from Settings. Live edits go into App::prefs; Save copies
+// them to App::saved_prefs.
+struct Preferences {
+    int regulation = 0;  // index into kRegulations
+    int time_step = 1;   // 0 = 1 ms, 1 = 5 ms, 2 = 10 ms
+    float telemetry_spacing_m = 5.0F;
+    bool default_wet = false;
+    float default_air_c = 24.0F;
+    float default_track_c = 38.0F;
+    int reference_lap = 0;  // index into kReferenceLaps
+    SpeedUnit speed_unit = SpeedUnit::Kmh;
+    TempUnit temp_unit = TempUnit::C;
+    MapColoring default_map_coloring = MapColoring::DeltaVsReference;
+    float neutral_band_s = 0.05F;
+    bool show_section_numbers = true;
+    std::string database_path = "~/Documents/ApexLabs/apex_labs.db";
+    bool autosave_runs = true;
+    int keep_telemetry = 1;  // index into kKeepTelemetry
+    bool telemetry_in_exports = false;
+
+    int DifferencesFrom(const Preferences& other) const;
+};
+
+extern const char* const kRegulations[];
+extern const int kRegulationCount;
+extern const char* const kReferenceLaps[];
+extern const int kReferenceLapCount;
+extern const char* const kKeepTelemetry[];
+extern const int kKeepTelemetryCount;
+
+struct App;
+
+const char* SpeedUnitLabel(SpeedUnit unit);
+float ConvertSpeed(SpeedUnit unit, float kmh);
+float ConvertTemp(TempUnit unit, float celsius);
+std::string FormatSpeed(const App& app, float kmh, bool with_unit = true);
+std::string FormatTemp(const App& app, float celsius);
 
 struct App {
     struct LogEntry {
@@ -61,7 +101,8 @@ struct App {
     Weather weather;
     SurfaceSettings surface;
     SimulationSettings sim;
-    SetupPreferences prefs;
+    Preferences prefs;
+    Preferences saved_prefs;
     RunResult run = MakeSampleRun();
     std::vector<RunSummary> history = MakeSampleHistory();
     std::vector<LogEntry> import_log;
@@ -108,4 +149,5 @@ void DrawSetupScreen(App& app);
 void DrawResultsScreen(App& app);
 void DrawImportExportScreen(App& app);
 void DrawCompareScreen(App& app);
+void DrawSettingsScreen(App& app);
 void DrawTopNav(App& app, const char* right_label);

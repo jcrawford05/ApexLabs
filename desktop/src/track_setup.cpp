@@ -101,3 +101,4 @@ const char* SegmentTypeName(SegmentType type) {
     }
     return "";
 }
+
