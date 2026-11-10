@@ -156,50 +156,6 @@ int main(int, char**) {
         }
         ImGui::NewFrame();
 
-        // Temporary hit-test diagnostic: click anywhere to dump coordinate spaces.
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            int window_w = 0;
-            int window_h = 0;
-            int pixel_w = 0;
-            int pixel_h = 0;
-            float render_scale_x = 0.0F;
-            float render_scale_y = 0.0F;
-            SDL_GetWindowSize(window, &window_w, &window_h);
-            SDL_GetWindowSizeInPixels(window, &pixel_w, &pixel_h);
-            SDL_GetRenderScale(renderer, &render_scale_x, &render_scale_y);
-            const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
-            const bool fullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
-            const bool maximized = (flags & SDL_WINDOW_MAXIMIZED) != 0;
-            std::fprintf(
-                stderr,
-                "[hit-diag] fullscreen=%d maximized=%d flags=0x%llx\n"
-                "  MousePos=(%.1f, %.1f) hovered=%d\n"
-                "  DisplaySize=(%.1f, %.1f) FramebufferScale=(%.3f, %.3f)\n"
-                "  SDL_WindowSize=%dx%d SizeInPixels=%dx%d\n"
-                "  PixelDensity=%.3f DisplayScale=%.3f RenderScale=(%.3f, %.3f)\n"
-                "  mouse/display ratio=(%.3f, %.3f)\n",
-                fullscreen ? 1 : 0,
-                maximized ? 1 : 0,
-                static_cast<unsigned long long>(flags),
-                io.MousePos.x,
-                io.MousePos.y,
-                ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) ? 1 : 0,
-                io.DisplaySize.x,
-                io.DisplaySize.y,
-                io.DisplayFramebufferScale.x,
-                io.DisplayFramebufferScale.y,
-                window_w,
-                window_h,
-                pixel_w,
-                pixel_h,
-                SDL_GetWindowPixelDensity(window),
-                SDL_GetWindowDisplayScale(window),
-                render_scale_x,
-                render_scale_y,
-                io.DisplaySize.x > 0.0F ? io.MousePos.x / io.DisplaySize.x : -1.0F,
-                io.DisplaySize.y > 0.0F ? io.MousePos.y / io.DisplaySize.y : -1.0F);
-        }
-
         app.Frame();
 
         ImGui::Render();

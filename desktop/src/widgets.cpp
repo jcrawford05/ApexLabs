@@ -515,11 +515,16 @@ bool SetupSlider(
             theme::kRed,
             3.0F);
     }
-    if (hovered || held) {
+    {
         const ImVec2 knob(bar.x + width * t, bar.y + bar_height * 0.5F);
-        const float radius = held ? 7.0F : 6.0F;
+        const float radius = held ? 7.0F : (hovered ? 6.0F : 5.0F);
         draw_list->AddCircleFilled(knob, radius, theme::kWhite, 24);
-        draw_list->AddCircle(knob, radius, theme::kRed, 24, 2.0F);
+        draw_list->AddCircle(
+            knob,
+            radius,
+            theme::kRed,
+            24,
+            held || hovered ? 2.0F : 1.5F);
     }
 
     ImGui::SetCursorScreenPos(ImVec2(bar.x, bar.y + bar_height));
@@ -1043,50 +1048,11 @@ bool HitArea(const char* id, ImVec2 size, bool* hovered, bool* held) {
     const bool pressed = ImGui::InvisibleButton(
         id,
         ImVec2(std::max(size.x, 1.0F), std::max(size.y, 1.0F)));
-    const bool item_hovered = ImGui::IsItemHovered();
     if (hovered) {
-        *hovered = item_hovered;
+        *hovered = ImGui::IsItemHovered();
     }
     if (held) {
         *held = ImGui::IsItemActive();
-    }
-
-    // Temporary hit-test diagnostic: on click, dump nearby InvisibleButton rects.
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        const ImVec2 min = ImGui::GetItemRectMin();
-        const ImVec2 max = ImGui::GetItemRectMax();
-        const ImVec2 mouse = ImGui::GetIO().MousePos;
-        const bool contains = mouse.x >= min.x && mouse.x < max.x &&
-            mouse.y >= min.y && mouse.y < max.y;
-        const float dx = mouse.x < min.x
-            ? min.x - mouse.x
-            : (mouse.x > max.x ? mouse.x - max.x : 0.0F);
-        const float dy = mouse.y < min.y
-            ? min.y - mouse.y
-            : (mouse.y > max.y ? mouse.y - max.y : 0.0F);
-        const float dist = std::sqrt(dx * dx + dy * dy);
-        if (contains || dist < 80.0F) {
-            std::fprintf(
-                stderr,
-                "[hit-diag] HitArea id=%s rect=(%.1f,%.1f)-(%.1f,%.1f) "
-                "size=(%.1f,%.1f) mouse=(%.1f,%.1f) contains=%d hovered=%d "
-                "pressed=%d delta=(%.1f,%.1f) dist=%.1f\n",
-                id,
-                min.x,
-                min.y,
-                max.x,
-                max.y,
-                max.x - min.x,
-                max.y - min.y,
-                mouse.x,
-                mouse.y,
-                contains ? 1 : 0,
-                item_hovered ? 1 : 0,
-                pressed ? 1 : 0,
-                mouse.x - (min.x + max.x) * 0.5F,
-                mouse.y - (min.y + max.y) * 0.5F,
-                dist);
-        }
     }
     return pressed;
 }
