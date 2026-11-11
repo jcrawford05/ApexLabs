@@ -709,7 +709,7 @@ void SectionPopup(App& app) {
             ImGui::CloseCurrentPopup();
             app.GoTo(Screen::CarSetup);
             app.car_panel = target;
-            app.track_focus = false;
+            app.setup_tab = SetupTab::Car;
         }
         ImGui::SetCursorScreenPos(ImVec2(fp.x, fp.y + 39));
         ImGui::Dummy(ImVec2(w, 0));

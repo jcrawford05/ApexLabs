@@ -1,7 +1,7 @@
-// Car & Track Setup migration from ApexLabsDevSpace commit
+// Unified Setup page migration from ApexLabsDevSpace commit
 // c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0 (Figma 1440 x 900).
 //
-// Car & Track Setup: all car and track configuration panels.
+// Setup page with separate car and track configuration tabs.
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -190,7 +190,6 @@ void CategoryColumn(App& app, bool track, float card_width) {
             } else {
                 app.car_panel = static_cast<CarPanel>(i);
             }
-            app.track_focus = track;
         }
         ImGui::PopID();
         ui::Space(8.0F);
@@ -1252,7 +1251,6 @@ void StepCar(App& app, int direction) {
     int index = static_cast<int>(app.car_panel) + direction;
     index = std::clamp(index, 0, count - 1);
     app.car_panel = static_cast<CarPanel>(index);
-    app.track_focus = false;
 }
 
 void StepTrack(App& app, int direction) {
@@ -1260,7 +1258,6 @@ void StepTrack(App& app, int direction) {
     int index = static_cast<int>(app.track_panel) + direction;
     index = std::clamp(index, 0, count - 1);
     app.track_panel = static_cast<TrackPanel>(index);
-    app.track_focus = true;
 }
 
 float PillRowWidth(const char* left_label, const char* right_label) {
@@ -1319,6 +1316,123 @@ void DrawTrackCategoryFooter(App& app, float column_width, float column_height) 
     ImGui::PopID();
 }
 
+void DrawSetupTabs(App& app, ImVec2 position) {
+    struct Tab {
+        const char* label;
+        SetupTab value;
+    };
+    const Tab tabs[] = {
+        {"Car Setup", SetupTab::Car},
+        {"Track Setup", SetupTab::Track},
+    };
+
+    constexpr float kTabWidth = 148.0F;
+    constexpr float kTabHeight = 38.0F;
+    constexpr float kTabGap = 8.0F;
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    bool hovered[2] = {};
+    bool held[2] = {};
+
+    for (int i = 0; i < 2; ++i) {
+        const ImVec2 tab_position(
+            position.x + i * (kTabWidth + kTabGap),
+            position.y);
+        ImGui::SetCursorScreenPos(tab_position);
+        ImGui::PushID(i);
+        if (ui::HitArea(
+                "##setup_tab",
+                ImVec2(kTabWidth, kTabHeight),
+                &hovered[i],
+                &held[i])) {
+            app.setup_tab = tabs[i].value;
+        }
+        ui::SetHandCursorIfHovered();
+        ImGui::PopID();
+    }
+
+    for (int i = 0; i < 2; ++i) {
+        const ImVec2 tab_position(
+            position.x + i * (kTabWidth + kTabGap),
+            position.y);
+        const bool active = app.setup_tab == tabs[i].value;
+        const ImVec2 tab_end(
+            tab_position.x + kTabWidth,
+            tab_position.y + kTabHeight);
+        const ImU32 background = active
+            ? setup::kCardActive
+            : held[i] ? setup::kGroup
+                      : hovered[i] ? setup::kCard : setup::kPanel;
+        const ImU32 border = active
+            ? setup::kCardActiveBorder
+            : hovered[i] ? setup::kMenuBorder : setup::kPanelBorder;
+        draw_list->AddRectFilled(tab_position, tab_end, background, 8.0F);
+        draw_list->AddRect(tab_position, tab_end, border, 8.0F);
+        if (active) {
+            draw_list->AddRectFilled(
+                ImVec2(tab_position.x + 12.0F, tab_end.y - 3.0F),
+                ImVec2(tab_end.x - 12.0F, tab_end.y),
+                kRed,
+                2.0F);
+        }
+
+        const ImVec2 text_size =
+            ui::TextSize(Face::PlexSemiBold, 12.0F, tabs[i].label);
+        ui::TextAt(
+            draw_list,
+            ImVec2(
+                tab_position.x + (kTabWidth - text_size.x) * 0.5F,
+                tab_position.y + (kTabHeight - text_size.y) * 0.5F),
+            Face::PlexSemiBold,
+            12.0F,
+            active ? setup::kTitle
+                   : hovered[i] ? setup::kLabel : setup::kMuted2,
+            tabs[i].label);
+    }
+}
+
+void DrawActiveSetupTab(
+    App& app,
+    float left,
+    float right,
+    float top,
+    float height) {
+    constexpr float kPanelGap = 16.0F;
+    const float available = right - left;
+    const float category_width = std::clamp(
+        std::floor(available * 0.20F),
+        225.0F,
+        280.0F);
+    const float detail_width = available - category_width - kPanelGap;
+    const bool track = app.setup_tab == SetupTab::Track;
+
+    const char* category_id = track ? "##trackcats" : "##carcats";
+    const char* detail_id = track ? "##trackdetail" : "##cardetail";
+    BeginPanel(
+        category_id,
+        ImVec2(left, top),
+        ImVec2(category_width, height),
+        ImVec2(15.0F, 15.0F));
+    CategoryColumn(app, track, ImGui::GetContentRegionAvail().x);
+    if (track) {
+        DrawTrackCategoryFooter(app, category_width, height);
+    } else {
+        DrawCarCategoryFooter(app, category_width, height);
+    }
+    EndPanel();
+
+    BeginPanel(
+        detail_id,
+        ImVec2(left + category_width + kPanelGap, top),
+        ImVec2(detail_width, height),
+        ImVec2(24.0F, 18.0F));
+    if (track) {
+        DrawTrackDetail(app);
+    } else {
+        DrawCarDetail(app);
+    }
+    EndPanel();
+}
+
 }  // namespace
 
 void DrawSetupScreen(App& app) {
@@ -1336,7 +1450,7 @@ void DrawSetupScreen(App& app) {
         Face::SpaceBold,
         24.0F,
         setup::kTitle,
-        "Car & Track Setup");
+        "Setup");
     ui::TextAt(
         draw_list,
         ImVec2(left, origin.y + 118.5F),
@@ -1344,6 +1458,8 @@ void DrawSetupScreen(App& app) {
         10.0F,
         Hex(0x737A84),
         "Configure the vehicle, select a circuit, then run the simulation.");
+
+    DrawSetupTabs(app, ImVec2(left, origin.y + 145.0F));
 
     constexpr float kRunWidth = 206.0F;
     constexpr float kHeaderPillGap = 8.0F;
@@ -1373,40 +1489,9 @@ void DrawSetupScreen(App& app) {
             4.0);
     }
 
-    constexpr float kDesign[4] = {225.0F, 455.0F, 225.0F, 431.0F};
-    constexpr float kDesignTotal = 1336.0F;
-    const float available = window_size.x - 48.0F - 48.0F;
-    const float top = origin.y + 154.0F;
-    const float height = std::max(300.0F, window_size.y - 154.0F - 32.0F);
-
-    float x = left;
-    float widths[4];
-    for (int i = 0; i < 4; ++i) {
-        widths[i] = std::floor(kDesign[i] * available / kDesignTotal);
-    }
-
-    BeginPanel("##carcats", ImVec2(x, top), ImVec2(widths[0], height), ImVec2(15, 15));
-    CategoryColumn(app, false, ImGui::GetContentRegionAvail().x);
-    DrawCarCategoryFooter(app, widths[0], height);
-    EndPanel();
-    x += widths[0] + 16.0F;
-
-    BeginPanel("##cardetail", ImVec2(x, top), ImVec2(widths[1], height), ImVec2(17, 15));
-    DrawCarDetail(app);
-    EndPanel();
-    x += widths[1] + 16.0F;
-
-    BeginPanel("##trackcats", ImVec2(x, top), ImVec2(widths[2], height), ImVec2(15, 15));
-    CategoryColumn(app, true, ImGui::GetContentRegionAvail().x);
-    DrawTrackCategoryFooter(app, widths[2], height);
-    EndPanel();
-    x += widths[2] + 16.0F;
-
-    BeginPanel(
-        "##trackdetail",
-        ImVec2(x, top),
-        ImVec2(right - x, height),
-        ImVec2(17, 15));
-    DrawTrackDetail(app);
-    EndPanel();
+    const float top = origin.y + 198.0F;
+    const float height = std::max(
+        300.0F,
+        origin.y + window_size.y - top - 32.0F);
+    DrawActiveSetupTab(app, left, right, top, height);
 }

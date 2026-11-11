@@ -39,6 +39,11 @@ enum class TrackPanel {
     Count,
 };
 
+enum class SetupTab {
+    Car,
+    Track,
+};
+
 enum class MapColoring { DeltaVsReference, Speed, ThrottleBrake };
 enum class TraceChannel { Speed, Throttle, Brake, TireTemp };
 enum class SpeedUnit { Kmh, Mph, Ms };
@@ -90,9 +95,9 @@ struct App {
     };
 
     Screen screen = Screen::Start;
+    SetupTab setup_tab = SetupTab::Car;
     CarPanel car_panel = CarPanel::Aerodynamics;
     TrackPanel track_panel = TrackPanel::Circuit;
-    bool track_focus = false;
     bool request_quit = false;
 
     Vehicle vehicle;

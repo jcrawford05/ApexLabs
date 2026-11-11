@@ -388,10 +388,9 @@ void DrawTopNav(App& app, const char* right_label) {
         Screen screen;
     };
     const Tab tabs[] = {
-        {"Car Setup", Screen::CarSetup},
+        {"Setup", Screen::CarSetup},
         {"Results", Screen::Results},
         {"Import / Export", Screen::ImportExport},
-        {"Comparison", Screen::Compare},
         {"Settings", Screen::Settings},
     };
     constexpr int kTabCount = static_cast<int>(sizeof(tabs) / sizeof(tabs[0]));

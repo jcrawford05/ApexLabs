@@ -55,9 +55,11 @@ For a Visual Studio multi-configuration build:
 The application opens a resizable window titled **Apex Lab**.
 
 The Start Screen provides navigation to the current desktop destinations.
-Car & Track Setup is migrated for its four-column configuration UI: all five
-car panels, all four track panels, Run Simulation, Previous/Next stepping,
-and in-memory Reset/Save Setup. Results is migrated against sample Run #42:
+Setup separates vehicle and track configuration into Car Setup and Track Setup
+tabs. Each tab has its own category column and expanded detail panel while
+preserving all five car panels, all four track panels, Run Simulation,
+Previous/Next stepping, and in-memory Reset/Save Setup. Results is migrated
+against sample Run #42:
 header and KPIs, interactive track map with coloring modes, section times
 table, telemetry chart, and section detail popup. Import / Export is
 migrated for its four-card layout (import drop zone, export rows, run
@@ -79,7 +81,8 @@ This phase contains only:
 - SDL event processing and a basic application loop
 - The Apex Lab color theme, custom fonts, and branded image loading
 - The migrated Start Screen and its responsive reference composition
-- A Car & Track Setup shell with top nav, four-column layout, and category cards
+- A unified Setup page with separate Car Setup and Track Setup tabs, each using
+  a category column and expanded detail panel
 - All car and track setup panels with lean in-memory setup state
 - Demo Circuit map geometry and sample track / weather defaults
 - Results fed by embedded sample Run #42 (map, section table, telemetry chart,
@@ -92,7 +95,8 @@ This phase contains only:
   Save / Reset, unsaved-change chrome, and unit-aware Results / Compare / Setup
 - The Results / app color palette and app-palette Button / Chip / Segmented /
   Toggle / Dropdown / NumberInput / TickSlider / Badge (shared Space / Plex fonts)
-- Basic navigation to Car Setup, Results, Import / Export, Comparison, and Settings
+- Global navigation to Setup, Results, Import / Export, and Settings; Comparison
+  remains available from the Start, Results, and run-history flows
 - Ordered ImGui, renderer, window, and SDL cleanup
 
 It does **not** yet include JSON load/save, physics, or the broader data set
@@ -112,7 +116,7 @@ adapted from the existing team development workspace:
   `src/textures.cpp`, `src/track_map.*`, and the setup / run-result subset of
   `src/data.*`
 
-Only the Start Screen, Car & Track Setup, Results, Import / Export,
+Only the Start Screen, unified Setup page, Results, Import / Export,
 Comparison, Settings, and the minimum support code they require were ported.
 Existing source authorship is preserved through this reference; this phase does
 not claim the full frontend has been migrated.

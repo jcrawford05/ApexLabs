@@ -250,7 +250,7 @@ void DrawStartScreen(App& app) {
         app.sim = SimulationSettings{};
         app.car_panel = CarPanel::Aerodynamics;
         app.track_panel = TrackPanel::Circuit;
-        app.track_focus = false;
+        app.setup_tab = SetupTab::Car;
         app.GoTo(Screen::CarSetup);
     }
     ImGui::SetCursorScreenPos(ImVec2(hero_x, hero_y + 347.0F));
