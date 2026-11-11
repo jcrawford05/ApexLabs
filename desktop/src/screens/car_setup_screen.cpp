@@ -33,7 +33,6 @@ const char* const kCarSubtitles[] = {
 
 void AerodynamicsPanel(App& app) {
     Vehicle& vehicle = app.vehicle;
-    app.vehicle_viewport.SetFocus(ViewportFocus::FullCar);
     PanelHeader(
         "Aerodynamics",
         "Tune the car's high-speed efficiency and balance.",
@@ -60,6 +59,7 @@ void AerodynamicsPanel(App& app) {
         app.vehicle_viewport.SetFocus(ViewportFocus::FrontWing);
     }
     ui::Space(8.0F);
+    bool front_ride_focus = false;
     ui::SetupSlider(
         "##frh",
         "Front ride height",
@@ -70,7 +70,11 @@ void AerodynamicsPanel(App& app) {
         "22 mm",
         "45 mm",
         false,
-        1.0F);
+        1.0F,
+        &front_ride_focus);
+    if (front_ride_focus) {
+        app.vehicle_viewport.SetFocus(ViewportFocus::FrontRideHeight);
+    }
     EndGroup();
     ui::Space(9.0F);
 
@@ -138,6 +142,10 @@ void TiresPanel(App& app) {
         ImGui::PushID(i);
         if (ui::Pill("##c", TireAt(i).short_name, vehicle.compound == i)) {
             vehicle.compound = i;
+            app.vehicle_viewport.SetFocus(ViewportFocus::Tires);
+        }
+        if (ImGui::IsItemHovered()) {
+            app.vehicle_viewport.SetFocus(ViewportFocus::Tires);
         }
         ImGui::PopID();
     }
@@ -337,6 +345,7 @@ void ChassisPanel(App& app) {
     BeginGroup("##ride");
     ui::SectionLabel("RIDE HEIGHT");
     ui::Space(8.0F);
+    bool rear_ride_focus = false;
     ui::SetupSlider(
         "##rrh",
         "Rear ride height",
@@ -347,7 +356,11 @@ void ChassisPanel(App& app) {
         "60 mm",
         "100 mm",
         false,
-        1.0F);
+        1.0F,
+        &rear_ride_focus);
+    if (rear_ride_focus) {
+        app.vehicle_viewport.SetFocus(ViewportFocus::RearRideHeight);
+    }
     EndGroup();
     ui::Space(9.0F);
 
@@ -459,9 +472,6 @@ void BrakesPanel(App& app) {
 }
 
 void DrawCarDetail(App& app) {
-    if (app.car_panel != CarPanel::Aerodynamics) {
-        app.vehicle_viewport.SetFocus(ViewportFocus::FullCar);
-    }
     switch (app.car_panel) {
         case CarPanel::Aerodynamics:
             AerodynamicsPanel(app);
@@ -616,7 +626,16 @@ void DrawCarSetupScreen(App& app) {
         ImVec2(x, top),
         ImVec2(viewport_width, height),
         ImVec2(14, 14));
-    ui::SectionLabel("VEHICLE PREVIEW");
+    {
+        const ImVec2 header_pos = ImGui::GetCursorScreenPos();
+        const float header_width = ImGui::GetContentRegionAvail().x;
+        ui::SectionLabel("VEHICLE PREVIEW");
+        ImGui::SetCursorScreenPos(ImVec2(header_pos.x + header_width - 118.0F, header_pos.y - 2.0F));
+        if (ui::Pill("##resetcam", "Reset Camera", false)) {
+            app.vehicle_viewport.ResetView();
+        }
+        ImGui::SetCursorScreenPos(ImVec2(header_pos.x, header_pos.y + 18.0F));
+    }
     ui::Space(6.0F);
     {
         const ImVec2 status_pos = ImGui::GetCursorScreenPos();
@@ -676,6 +695,6 @@ void DrawCarSetupScreen(App& app) {
         Face::PlexRegular,
         10.0F,
         Hex(0x8B93A0),
-        "Drag to orbit  ·  Scroll to zoom");
+        "Drag to orbit  ·  Scroll to zoom  ·  Reset restores focus");
     EndPanel();
 }

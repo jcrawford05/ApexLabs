@@ -218,7 +218,7 @@ void App::RenderViewport(SDL_GPUCommandBuffer* command_buffer) {
         viewport_pixel_h <= 0) {
         return;
     }
-    vehicle_viewport.UpdateAero(vehicle.front_wing_deg, vehicle.rear_wing_deg);
+    vehicle_viewport.UpdateFromVehicle(vehicle);
     vehicle_viewport.EnsureSize(viewport_pixel_w, viewport_pixel_h);
     vehicle_viewport.Render(command_buffer);
 }
