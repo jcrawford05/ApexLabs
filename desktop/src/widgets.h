@@ -92,9 +92,11 @@ bool SetupSlider(
     const char* min_label,
     const char* max_label,
     bool compact = false,
-    float step = 0.0F);
+    float step = 0.0F,
+    bool* out_interacted = nullptr);
 void SectionLabel(const char* text);
 bool BigRedButton(const char* id, const char* label, ImVec2 size);
+bool BigOutlineButton(const char* id, const char* label, ImVec2 size);
 
 // ---- "App" palette widgets (Results, and later Settings) ---------------------
 enum class ButtonKind { Primary, Outline, Danger, Subtle };

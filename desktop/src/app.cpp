@@ -137,30 +137,62 @@ void LogActivity(App& app, const std::string& text, bool ok) {
 
 bool App::Init(
     SDL_Window* app_window,
-    SDL_Renderer* renderer,
+    SDL_GPUDevice* device,
     const std::string& base_directory,
     std::string& error) {
     window = app_window;
+    gpu_device = device;
     saved_prefs = prefs;
     map_coloring = prefs.default_map_coloring;
     weather.preset = prefs.default_wet ? WeatherPreset::Wet : WeatherPreset::Dry;
     weather.air_c = prefs.default_air_c;
     weather.track_c = prefs.default_track_c;
+    saved_track = track;
+    saved_weather = weather;
+    saved_surface = surface;
+    saved_sim = sim;
     import_event = SDL_RegisterEvents(1);
     if (import_event == static_cast<uint32_t>(static_cast<Sint32>(-1))) {
         error = "Could not register the Import file-dialog event.";
         window = nullptr;
+        gpu_device = nullptr;
+        return false;
+    }
+
+    SDL_GPUSamplerCreateInfo sampler_info{};
+    sampler_info.min_filter = SDL_GPU_FILTER_LINEAR;
+    sampler_info.mag_filter = SDL_GPU_FILTER_LINEAR;
+    sampler_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+    sampler_info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    sampler_info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    sampler_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    image_sampler = SDL_CreateGPUSampler(gpu_device, &sampler_info);
+    if (!image_sampler) {
+        error = std::string("Could not create the UI image sampler: ") +
+            SDL_GetError();
+        window = nullptr;
+        gpu_device = nullptr;
         return false;
     }
 
     const std::string images = base_directory + "assets/images/";
-    logo_wordmark = LoadImage(renderer, images + "logo_wordmark.png");
-    logo_badge = LoadImage(renderer, images + "logo_badge.png");
-    track_line_left = LoadImage(renderer, images + "track_line_left.png");
-    track_line_right = LoadImage(renderer, images + "track_line_right.png");
+    logo_wordmark = LoadImage(gpu_device, image_sampler, images + "logo_wordmark.png");
+    logo_badge = LoadImage(gpu_device, image_sampler, images + "logo_badge.png");
+    track_line_left =
+        LoadImage(gpu_device, image_sampler, images + "track_line_left.png");
+    track_line_right =
+        LoadImage(gpu_device, image_sampler, images + "track_line_right.png");
 
     if (!logo_wordmark || !logo_badge || !track_line_left || !track_line_right) {
         error = "Could not load the required Apex Lab Start Screen artwork.";
+        Shutdown();
+        return false;
+    }
+
+    const std::string vehicle_glb = base_directory +
+        "assets/vehicles/formula_car/apex_viewport_test.glb";
+    if (!vehicle_viewport.Init(gpu_device, vehicle_glb)) {
+        error = "Could not initialize the Car Setup 3D viewport.";
         Shutdown();
         return false;
     }
@@ -168,10 +200,27 @@ bool App::Init(
 }
 
 void App::Shutdown() {
-    FreeImage(logo_wordmark);
-    FreeImage(logo_badge);
-    FreeImage(track_line_left);
-    FreeImage(track_line_right);
+    vehicle_viewport.Shutdown();
+    FreeImage(gpu_device, logo_wordmark);
+    FreeImage(gpu_device, logo_badge);
+    FreeImage(gpu_device, track_line_left);
+    FreeImage(gpu_device, track_line_right);
+    if (gpu_device && image_sampler) {
+        SDL_ReleaseGPUSampler(gpu_device, image_sampler);
+    }
+    image_sampler = nullptr;
+    gpu_device = nullptr;
+    window = nullptr;
+}
+
+void App::RenderViewport(SDL_GPUCommandBuffer* command_buffer) {
+    if (screen != Screen::CarSetup || viewport_pixel_w <= 0 ||
+        viewport_pixel_h <= 0) {
+        return;
+    }
+    vehicle_viewport.UpdateAero(vehicle.front_wing_deg, vehicle.rear_wing_deg);
+    vehicle_viewport.EnsureSize(viewport_pixel_w, viewport_pixel_h);
+    vehicle_viewport.Render(command_buffer);
 }
 
 void App::Frame() {
@@ -179,7 +228,8 @@ void App::Frame() {
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
     const ImU32 background =
-        (screen == Screen::Start || screen == Screen::CarSetup)
+        (screen == Screen::Start || screen == Screen::CarSetup ||
+         screen == Screen::TrackSetup)
             ? theme::setup::kBg
             : theme::app::kBg;
     ImGui::PushStyleColor(ImGuiCol_WindowBg, background);
@@ -198,7 +248,10 @@ void App::Frame() {
             DrawStartScreen(*this);
             break;
         case Screen::CarSetup:
-            DrawSetupScreen(*this);
+            DrawCarSetupScreen(*this);
+            break;
+        case Screen::TrackSetup:
+            DrawTrackSetupScreen(*this);
             break;
         case Screen::Results:
             DrawResultsScreen(*this);
@@ -280,6 +333,10 @@ void App::ShowToast(const std::string& text, double seconds) {
 
 void App::SaveSetup() {
     saved_vehicle = vehicle;
+    saved_track = track;
+    saved_weather = weather;
+    saved_surface = surface;
+    saved_sim = sim;
     ShowToast("Setup saved.");
 }
 
@@ -389,6 +446,7 @@ void DrawTopNav(App& app, const char* right_label) {
     };
     const Tab tabs[] = {
         {"Car Setup", Screen::CarSetup},
+        {"Track Setup", Screen::TrackSetup},
         {"Results", Screen::Results},
         {"Import / Export", Screen::ImportExport},
         {"Comparison", Screen::Compare},

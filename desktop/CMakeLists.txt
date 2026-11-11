@@ -17,17 +17,17 @@ include(FetchContent)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
-# This foundation needs SDL's event, video, renderer, and native file-dialog
-# paths. Keeping unrelated subsystems out reduces compile time and build size.
+# Video + GPU for the app shell / 3D viewport, plus native file dialogs.
 set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
 set(SDL_CAMERA OFF CACHE BOOL "" FORCE)
 set(SDL_DIALOG ON CACHE BOOL "" FORCE)
-set(SDL_GPU OFF CACHE BOOL "" FORCE)
+set(SDL_GPU ON CACHE BOOL "" FORCE)
 set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
 set(SDL_HIDAPI OFF CACHE BOOL "" FORCE)
 set(SDL_JOYSTICK OFF CACHE BOOL "" FORCE)
 set(SDL_POWER OFF CACHE BOOL "" FORCE)
 set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
+set(SDL_RENDER OFF CACHE BOOL "" FORCE)
 set(SDL_RENDER_GPU OFF CACHE BOOL "" FORCE)
 set(SDL_OPENGL OFF CACHE BOOL "" FORCE)
 set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
@@ -46,14 +46,14 @@ FetchContent_Declare(imgui
 FetchContent_MakeAvailable(SDL3 imgui)
 
 # Dear ImGui does not provide its own CMake project. Build only the core and
-# the SDL3 + SDL_Renderer3 backends required by this foundation application.
+# the SDL3 + SDL_GPU backends required by this foundation application.
 add_library(apex_imgui STATIC
   ${imgui_SOURCE_DIR}/imgui.cpp
   ${imgui_SOURCE_DIR}/imgui_draw.cpp
   ${imgui_SOURCE_DIR}/imgui_tables.cpp
   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp)
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp)
 
 target_include_directories(apex_imgui PUBLIC
   ${imgui_SOURCE_DIR}
@@ -66,17 +66,20 @@ add_executable(apex_lab_desktop
   src/run_result.cpp
   src/sample_history.cpp
   src/sample_telemetry.cpp
+  src/screens/car_setup_screen.cpp
   src/screens/compare_screen.cpp
   src/screens/import_export_screen.cpp
   src/screens/results_screen.cpp
   src/screens/settings_screen.cpp
-  src/screens/setup_screen.cpp
   src/screens/start_screen.cpp
+  src/screens/track_setup_screen.cpp
+  src/setup_common.cpp
   src/theme.cpp
   src/textures.cpp
   src/track_map.cpp
   src/track_setup.cpp
   src/vehicle.cpp
+  src/viewport3d.cpp
   src/widgets.cpp)
 target_include_directories(apex_lab_desktop PRIVATE src third_party)
 target_link_libraries(apex_lab_desktop PRIVATE apex_imgui)

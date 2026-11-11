@@ -1,8 +1,4 @@
-// Apex Lab desktop foundation: SDL3 window + SDL_Renderer3 + Dear ImGui.
-//
-// Initialization and shutdown flow adapted from the existing team prototype:
-// C:/Users/cesar/Documents/ApexLabsDevSpace at commit
-// c0998baaf04bb2bc3c53ec999eb4e05d6ab141f0.
+// Apex Lab desktop foundation: SDL3 window + SDL_GPU + Dear ImGui.
 
 #include <cstdio>
 #include <string>
@@ -12,7 +8,7 @@
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlrenderer3.h"
+#include "imgui_impl_sdlgpu3.h"
 #include "app.h"
 #include "theme.h"
 
@@ -23,12 +19,19 @@ constexpr int kWindowHeight = 900;
 constexpr int kMinimumWindowWidth = 1280;
 constexpr int kMinimumWindowHeight = 760;
 
-void Shutdown(SDL_Window* window, SDL_Renderer* renderer) {
-    ImGui_ImplSDLRenderer3_Shutdown();
+void Shutdown(SDL_Window* window, SDL_GPUDevice* device) {
+    ImGui_ImplSDLGPU3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+    if (device && window) {
+        SDL_ReleaseWindowFromGPUDevice(device, window);
+    }
+    if (device) {
+        SDL_DestroyGPUDevice(device);
+    }
+    if (window) {
+        SDL_DestroyWindow(window);
+    }
     SDL_Quit();
 }
 
@@ -55,15 +58,34 @@ int main(int, char**) {
         kMinimumWindowWidth,
         kMinimumWindowHeight);
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
-    if (!renderer) {
-        std::fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
+    SDL_GPUDevice* device = SDL_CreateGPUDevice(
+        SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL |
+            SDL_GPU_SHADERFORMAT_MSL | SDL_GPU_SHADERFORMAT_METALLIB,
+        true,
+        nullptr);
+    if (!device) {
+        std::fprintf(stderr, "SDL_CreateGPUDevice failed: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
-    SDL_SetRenderVSync(renderer, 1);
+    if (!SDL_ClaimWindowForGPUDevice(device, window)) {
+        std::fprintf(
+            stderr,
+            "SDL_ClaimWindowForGPUDevice failed: %s\n",
+            SDL_GetError());
+        SDL_DestroyGPUDevice(device);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    SDL_SetGPUSwapchainParameters(
+        device,
+        window,
+        SDL_GPU_SWAPCHAINCOMPOSITION_SDR,
+        SDL_GPU_PRESENTMODE_VSYNC);
+
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_ShowWindow(window);
 
@@ -74,24 +96,6 @@ int main(int, char**) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
 
-    if (!ImGui_ImplSDL3_InitForSDLRenderer(window, renderer)) {
-        std::fprintf(stderr, "Dear ImGui SDL3 backend initialization failed.\n");
-        ImGui::DestroyContext();
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-    if (!ImGui_ImplSDLRenderer3_Init(renderer)) {
-        std::fprintf(stderr, "Dear ImGui SDL_Renderer3 backend initialization failed.\n");
-        ImGui_ImplSDL3_Shutdown();
-        ImGui::DestroyContext();
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
     const char* base_path = SDL_GetBasePath();
     const std::string base_directory = base_path ? base_path : "";
     float pixel_scale = SDL_GetWindowPixelDensity(window);
@@ -100,16 +104,32 @@ int main(int, char**) {
     }
     if (!theme::LoadFonts(base_directory + "assets/fonts", pixel_scale)) {
         std::fprintf(stderr, "Apex Lab fonts could not be loaded.\n");
-        Shutdown(window, renderer);
+        Shutdown(window, device);
         return 1;
     }
     theme::ApplyStyle();
 
+    if (!ImGui_ImplSDL3_InitForSDLGPU(window)) {
+        std::fprintf(stderr, "Dear ImGui SDL3 backend initialization failed.\n");
+        Shutdown(window, device);
+        return 1;
+    }
+
+    ImGui_ImplSDLGPU3_InitInfo init_info{};
+    init_info.Device = device;
+    init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
+    init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+    if (!ImGui_ImplSDLGPU3_Init(&init_info)) {
+        std::fprintf(stderr, "Dear ImGui SDL_GPU backend initialization failed.\n");
+        Shutdown(window, device);
+        return 1;
+    }
+
     App app;
     std::string error;
-    if (!app.Init(window, renderer, base_directory, error)) {
+    if (!app.Init(window, device, base_directory, error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
-        Shutdown(window, renderer);
+        Shutdown(window, device);
         return 1;
     }
 
@@ -141,7 +161,7 @@ int main(int, char**) {
             continue;
         }
 
-        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDLGPU3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         // Dear ImGui 1.91.9b falls back to SDL_GetGlobalMouseState() whenever the
         // app is focused. On macOS fullscreen that disagrees with the client
@@ -156,67 +176,62 @@ int main(int, char**) {
         }
         ImGui::NewFrame();
 
-        // Temporary hit-test diagnostic: click anywhere to dump coordinate spaces.
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            int window_w = 0;
-            int window_h = 0;
-            int pixel_w = 0;
-            int pixel_h = 0;
-            float render_scale_x = 0.0F;
-            float render_scale_y = 0.0F;
-            SDL_GetWindowSize(window, &window_w, &window_h);
-            SDL_GetWindowSizeInPixels(window, &pixel_w, &pixel_h);
-            SDL_GetRenderScale(renderer, &render_scale_x, &render_scale_y);
-            const SDL_WindowFlags flags = SDL_GetWindowFlags(window);
-            const bool fullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
-            const bool maximized = (flags & SDL_WINDOW_MAXIMIZED) != 0;
-            std::fprintf(
-                stderr,
-                "[hit-diag] fullscreen=%d maximized=%d flags=0x%llx\n"
-                "  MousePos=(%.1f, %.1f) hovered=%d\n"
-                "  DisplaySize=(%.1f, %.1f) FramebufferScale=(%.3f, %.3f)\n"
-                "  SDL_WindowSize=%dx%d SizeInPixels=%dx%d\n"
-                "  PixelDensity=%.3f DisplayScale=%.3f RenderScale=(%.3f, %.3f)\n"
-                "  mouse/display ratio=(%.3f, %.3f)\n",
-                fullscreen ? 1 : 0,
-                maximized ? 1 : 0,
-                static_cast<unsigned long long>(flags),
-                io.MousePos.x,
-                io.MousePos.y,
-                ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) ? 1 : 0,
-                io.DisplaySize.x,
-                io.DisplaySize.y,
-                io.DisplayFramebufferScale.x,
-                io.DisplayFramebufferScale.y,
-                window_w,
-                window_h,
-                pixel_w,
-                pixel_h,
-                SDL_GetWindowPixelDensity(window),
-                SDL_GetWindowDisplayScale(window),
-                render_scale_x,
-                render_scale_y,
-                io.DisplaySize.x > 0.0F ? io.MousePos.x / io.DisplaySize.x : -1.0F,
-                io.DisplaySize.y > 0.0F ? io.MousePos.y / io.DisplaySize.y : -1.0F);
-        }
-
         app.Frame();
 
         ImGui::Render();
-        SDL_SetRenderScale(
-            renderer,
-            io.DisplayFramebufferScale.x,
-            io.DisplayFramebufferScale.y);
-        SDL_SetRenderDrawColor(renderer, 18, 18, 22, 255);
-        SDL_RenderClear(renderer);
-        ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-        SDL_RenderPresent(renderer);
+        ImDrawData* draw_data = ImGui::GetDrawData();
+        const bool is_minimized =
+            draw_data->DisplaySize.x <= 0.0F || draw_data->DisplaySize.y <= 0.0F;
+
+        SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+        if (!command_buffer) {
+            std::fprintf(
+                stderr,
+                "SDL_AcquireGPUCommandBuffer failed: %s\n",
+                SDL_GetError());
+            continue;
+        }
+
+        app.RenderViewport(command_buffer);
+
+        SDL_GPUTexture* swapchain_texture = nullptr;
+        if (!SDL_WaitAndAcquireGPUSwapchainTexture(
+                command_buffer,
+                window,
+                &swapchain_texture,
+                nullptr,
+                nullptr)) {
+            std::fprintf(
+                stderr,
+                "SDL_WaitAndAcquireGPUSwapchainTexture failed: %s\n",
+                SDL_GetError());
+            SDL_CancelGPUCommandBuffer(command_buffer);
+            continue;
+        }
+
+        if (swapchain_texture != nullptr && !is_minimized) {
+            // Mandatory: upload ImGui vertex/index data before the render pass.
+            Imgui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer);
+
+            SDL_GPUColorTargetInfo target_info{};
+            target_info.texture = swapchain_texture;
+            target_info.clear_color = SDL_FColor{18 / 255.0F, 18 / 255.0F, 22 / 255.0F, 1.0F};
+            target_info.load_op = SDL_GPU_LOADOP_CLEAR;
+            target_info.store_op = SDL_GPU_STOREOP_STORE;
+            SDL_GPURenderPass* render_pass =
+                SDL_BeginGPURenderPass(command_buffer, &target_info, 1, nullptr);
+            ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer, render_pass);
+            SDL_EndGPURenderPass(render_pass);
+        }
+
+        SDL_SubmitGPUCommandBuffer(command_buffer);
         if (app.request_quit) {
             running = false;
         }
     }
 
     app.Shutdown();
-    Shutdown(window, renderer);
+    SDL_WaitForGPUIdle(device);
+    Shutdown(window, device);
     return 0;
 }

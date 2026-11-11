@@ -41,7 +41,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+NEED_CONFIGURE=0
 if [[ ! -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
+  NEED_CONFIGURE=1
+elif ! grep -q "^SDL_GPU:BOOL=ON$" "${BUILD_DIR}/CMakeCache.txt" 2>/dev/null; then
+  # Older configures disabled the GPU API; force a fresh configure.
+  NEED_CONFIGURE=1
+fi
+
+if [[ "${NEED_CONFIGURE}" -eq 1 ]]; then
   echo "Configuring desktop → ${BUILD_DIR}"
   cmake -S "${ROOT}" -B "${BUILD_DIR}"
 fi

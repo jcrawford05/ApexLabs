@@ -455,10 +455,12 @@ bool SetupSlider(
     const char* min_label,
     const char* max_label,
     bool compact,
-    float step) {
+    float step,
+    bool* out_interacted) {
     const float label_size = compact ? 10.0F : 11.0F;
     const float bar_height = compact ? 5.0F : 6.0F;
     const float gap = compact ? 4.0F : 5.0F;
+    const float hit_pad = 8.0F;
     const float width = ImGui::GetContentRegionAvail().x;
 
     char buffer[48];
@@ -474,13 +476,21 @@ bool SetupSlider(
         theme::setup::kLabel);
     Space(gap);
 
+    // Hit target is centered on the visible track (not the labels beneath it).
     const ImVec2 bar = ImGui::GetCursorScreenPos();
-    ImGui::SetCursorScreenPos(ImVec2(bar.x, bar.y - 6.0F));
+    ImGui::SetCursorScreenPos(ImVec2(bar.x, bar.y - hit_pad));
     bool hovered = false;
     bool held = false;
     ImGui::PushID(id);
-    HitArea("##bar", ImVec2(width, bar_height + 12.0F), &hovered, &held);
+    HitArea(
+        "##bar",
+        ImVec2(width, bar_height + hit_pad * 2.0F),
+        &hovered,
+        &held);
     ImGui::PopID();
+    if (out_interacted) {
+        *out_interacted = hovered || held;
+    }
     if (hovered || held) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
     }
@@ -568,6 +578,41 @@ bool BigRedButton(const char* id, const char* label, ImVec2 size) {
         Face::PlexSemiBold,
         20.0F,
         theme::kWhite,
+        label);
+    return pressed;
+}
+
+bool BigOutlineButton(const char* id, const char* label, ImVec2 size) {
+    const ImVec2 position = ImGui::GetCursorScreenPos();
+    bool hovered = false;
+    bool held = false;
+    const bool pressed = HitArea(id, size, &hovered, &held);
+    SetHandCursorIfHovered();
+    ImDrawList* draw_list = DrawList();
+    const ImVec2 end(position.x + size.x, position.y + size.y);
+    if (hovered || held) {
+        draw_list->AddRectFilled(
+            position,
+            end,
+            held ? theme::setup::kGroup : theme::setup::kSummary,
+            12.0F);
+    }
+    draw_list->AddRect(
+        position,
+        end,
+        hovered ? theme::Hex(0x6E7580) : theme::setup::kPanelBorder,
+        12.0F,
+        0,
+        1.5F);
+    const ImVec2 text_size = TextSize(Face::PlexSemiBold, 16.0F, label);
+    TextAt(
+        draw_list,
+        ImVec2(
+            position.x + (size.x - text_size.x) * 0.5F,
+            position.y + (size.y - text_size.y) * 0.5F),
+        Face::PlexSemiBold,
+        16.0F,
+        theme::setup::kTitle,
         label);
     return pressed;
 }

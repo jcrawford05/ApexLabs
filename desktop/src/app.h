@@ -9,13 +9,17 @@
 #include "textures.h"
 #include "track_setup.h"
 #include "vehicle.h"
+#include "viewport3d.h"
 
-struct SDL_Renderer;
+struct SDL_GPUDevice;
+struct SDL_GPUCommandBuffer;
+struct SDL_GPUSampler;
 struct SDL_Window;
 
 enum class Screen {
     Start,
     CarSetup,
+    TrackSetup,
     Results,
     ImportExport,
     Compare,
@@ -98,9 +102,13 @@ struct App {
     Vehicle vehicle;
     Vehicle saved_vehicle;
     Track track = MakeDemoCircuit();
+    Track saved_track = MakeDemoCircuit();
     Weather weather;
+    Weather saved_weather;
     SurfaceSettings surface;
+    SurfaceSettings saved_surface;
     SimulationSettings sim;
+    SimulationSettings saved_sim;
     Preferences prefs;
     Preferences saved_prefs;
     RunResult run = MakeSampleRun();
@@ -124,13 +132,20 @@ struct App {
     Image track_line_left;
     Image track_line_right;
 
+    SDL_GPUDevice* gpu_device = nullptr;
+    SDL_GPUSampler* image_sampler = nullptr;
+    Viewport3D vehicle_viewport;
+    int viewport_pixel_w = 0;
+    int viewport_pixel_h = 0;
+
     bool Init(
         SDL_Window* window,
-        SDL_Renderer* renderer,
+        SDL_GPUDevice* device,
         const std::string& base_directory,
         std::string& error);
     void Shutdown();
     void Frame();
+    void RenderViewport(SDL_GPUCommandBuffer* command_buffer);
     void GoTo(Screen destination);
     void ShowToast(const std::string& text, double seconds = 3.0);
     void SaveSetup();
@@ -145,7 +160,8 @@ struct App {
 };
 
 void DrawStartScreen(App& app);
-void DrawSetupScreen(App& app);
+void DrawCarSetupScreen(App& app);
+void DrawTrackSetupScreen(App& app);
 void DrawResultsScreen(App& app);
 void DrawImportExportScreen(App& app);
 void DrawCompareScreen(App& app);
