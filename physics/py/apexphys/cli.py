@@ -6,6 +6,7 @@
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from apexphys import __version__, units
@@ -19,6 +20,7 @@ from apexphys.params import (
     load_track,
 )
 from apexphys.readouts import compute_readouts
+from apexphys.solver import solve_lap
 from apexphys.straight_line import acceleration_run, make_case
 from apexphys.types import CarParams, Environment, SolverConfig, TrackModel
 
@@ -71,9 +73,50 @@ def _run(args: argparse.Namespace) -> int:
     data = load_physics_data(args.data)
     car = load_car(args.car, data)
     track = load_track(args.track)
-    print(summarize(car, track, default_environment(data), default_solver_config()))
-    print("Inputs loaded. The lap solver is not implemented yet (phase P2).")
+    env = default_environment(data)
+    config = default_solver_config()
+    if args.ds is not None:
+        if args.ds <= 0.0:
+            raise ParamError("--ds must be positive")
+        config = replace(config, ds_m=args.ds)
+    if args.fuel_kg is not None:
+        config = replace(config, start_fuel_kg=args.fuel_kg)
+    if args.standing_start:
+        config = replace(config, standing_start=True)
+    print(summarize(car, track, env, config))
+
+    lap = solve_lap(car, track, env, data.calibration, config)
+    print(f"Lap time: {format_lap_time(lap.lap_time_s)}")
+    print("Sectors: " + "  ".join(f"{t:.3f} s" for t in lap.sector_times_s))
+    print(
+        f"Top speed: {units.ms_to_kmh(lap.top_speed_m_s):.1f} km/h "
+        f"at {lap.top_speed_at_m:.0f} m"
+    )
+    print(f"  {'#':>2} {'segment':<16}{'time s':>8}{'min km/h':>10}{'peak brake g':>14}")
+    for seg, time_s, v_min, decel in zip(
+        track.segments,
+        lap.segment_times_s,
+        lap.segment_min_speed_m_s,
+        lap.segment_peak_brake_m_s2,
+    ):
+        print(
+            f"  {seg.seq:>2} {seg.name:<16}{time_s:>8.3f}"
+            f"{units.ms_to_kmh(v_min):>10.1f}{decel / units.G:>14.2f}"
+        )
+
+    if args.plots is not None:
+        from apexphys import plots
+
+        args.plots.mkdir(parents=True, exist_ok=True)
+        plots.plot_speed_trace(car, track, lap, args.plots / "speed_trace.png")
+        print(f"Plot written to {args.plots}")
     return 0
+
+
+def format_lap_time(seconds: float) -> str:
+    """1:05.078, the format the Results screen uses."""
+    minutes, rest = divmod(seconds, 60.0)
+    return f"{int(minutes)}:{rest:06.3f}"
 
 
 def _straight_line(args: argparse.Namespace) -> int:
@@ -134,9 +177,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    run = commands.add_parser("run", help="load a car and a track and run the model")
+    run = commands.add_parser("run", help="solve one lap for a car on a track")
     run.add_argument("--car", type=Path, required=True, help="car JSON file")
     run.add_argument("--track", type=Path, required=True, help="track JSON file")
+    run.add_argument("--ds", type=float, help="solver step in metres (default: 2)")
+    run.add_argument("--fuel-kg", type=float, help="fuel on board (default: 30)")
+    run.add_argument("--standing-start", action="store_true", help="start from rest")
+    run.add_argument("--plots", type=Path, help="directory to write the speed trace to")
     run.add_argument(
         "--data",
         type=Path,

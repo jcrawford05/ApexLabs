@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from apexphys import powertrain, units
+from apexphys.types import CarParams, LapSolution, TrackModel
 from apexphys.straight_line import (
     AccelerationRun,
     StraightLineCase,
@@ -82,6 +83,46 @@ def plot_acceleration_run(case: StraightLineCase, run: AccelerationRun, path: Pa
     ax_g.set_xlabel("Time (s)")
     ax_g.set_yticks(range(1, powertrain.gear_count(case.car) + 1))
     ax_g.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
+def plot_speed_trace(
+    car: CarParams, track: TrackModel, lap: LapSolution, path: Path
+) -> None:
+    """Speed, throttle and brake against distance, with segment boundaries."""
+    plt = _pyplot()
+    step_start = lap.distance_m[:-1]
+    fig, (ax_v, ax_p) = plt.subplots(
+        2, 1, figsize=(11.0, 6.0), sharex=True, height_ratios=(3, 1)
+    )
+    ax_v.plot(lap.distance_m, [units.ms_to_kmh(v) for v in lap.speed_m_s])
+    ax_v.set_ylabel("Speed (km/h)")
+    ax_v.set_title(f"{car.name} on {track.name}: lap {lap.lap_time_s:.3f} s")
+    ax_p.step(step_start, [100.0 * x for x in lap.throttle], where="post", label="Throttle")
+    ax_p.step(step_start, [100.0 * x for x in lap.brake], where="post", label="Brake")
+    ax_p.set_ylabel("Pedal (%)")
+    ax_p.set_xlabel("Distance (m)")
+    ax_p.legend(loc="center right", fontsize=8)
+    boundary = 0.0
+    for seg in track.segments:
+        for ax in (ax_v, ax_p):
+            ax.axvline(boundary, color="0.8", linewidth=0.8)
+        ax_v.annotate(
+            str(seg.seq),
+            (boundary + 0.5 * seg.length_m, 1.0),
+            xycoords=("data", "axes fraction"),
+            xytext=(0, -12),
+            textcoords="offset points",
+            ha="center",
+            fontsize=8,
+            color="0.4",
+        )
+        boundary += seg.length_m
+    ax_v.set_xlim(0.0, lap.distance_m[-1])
+    ax_v.set_ylim(bottom=0.0)
+    ax_v.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
     plt.close(fig)

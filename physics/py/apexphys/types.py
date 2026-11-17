@@ -202,9 +202,40 @@ class SolverConfig:
 
 @dataclass(frozen=True)
 class LapSolution:
-    """One solved lap. Further channels (a_x, a_y, gear, rpm, ...) arrive with their modules."""
+    """One solved lap on a grid of ``n`` equal steps of length ``ds_m``.
 
+    Node channels have ``n + 1`` values (node 0 is the start line and node n
+    the finish line). Step channels have ``n`` values; step i runs from node i
+    to node i + 1.
+    """
+
+    ds_m: float
+    standing_start: bool
+
+    # Node channels
     distance_m: tuple[float, ...]
     speed_m_s: tuple[float, ...]
+    time_s: tuple[float, ...]  # elapsed time on reaching each node
+
+    # Step channels
+    a_x_m_s2: tuple[float, ...]  # longitudinal acceleration, negative when slowing
+    a_y_m_s2: tuple[float, ...]  # lateral acceleration at the step's first node
+    gear: tuple[int, ...]
+    engine_omega_rad_s: tuple[float, ...]
+    throttle: tuple[float, ...]  # 0..1, drive force used / drive force available
+    brake: tuple[float, ...]  # 0..1, brake force used / brake force available
+    drive_force_n: tuple[float, ...]
+    brake_force_n: tuple[float, ...]
+    resistance_force_n: tuple[float, ...]  # drag + rolling resistance
+    downforce_n: tuple[float, ...]
+    segment: tuple[int, ...]  # index into TrackModel.segments
+    sector: tuple[int, ...]
+
+    # Totals
     lap_time_s: float
     sector_times_s: tuple[float, ...]
+    segment_times_s: tuple[float, ...]
+    segment_min_speed_m_s: tuple[float, ...]
+    segment_peak_brake_m_s2: tuple[float, ...]  # largest deceleration, 0 if none
+    top_speed_m_s: float
+    top_speed_at_m: float

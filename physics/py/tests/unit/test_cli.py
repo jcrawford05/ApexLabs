@@ -15,6 +15,8 @@ def test_run_loads_the_sample_car_and_demo_circuit(capsys):
     assert "Track: Demo Circuit, 4000 m, 12 segments, 4 corners, 3 sectors" in out
     assert "air 24.0 C, track 38.0 C" in out
     assert "flying start" in out
+    assert "Lap time: 1:0" in out
+    assert "T1 hairpin" in out
     out.encode("ascii")  # stays printable on any Windows console code page
 
 
@@ -52,3 +54,17 @@ def test_straight_line_reports_readouts_and_writes_plots(tmp_path, capsys):
 def test_straight_line_fuel_option(capsys):
     assert main(["straight-line", "--car", str(SAMPLE_CAR), "--fuel-kg", "100"]) == 0
     assert "981.0 kg with fuel" in capsys.readouterr().out
+
+
+def test_run_options(tmp_path, capsys):
+    args = ["run", "--car", str(SAMPLE_CAR), "--track", str(SAMPLE_TRACK)]
+    assert main(args + ["--ds", "5", "--fuel-kg", "100", "--standing-start",
+                        "--plots", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "Solver: ds 5 m, 1 lap(s), standing start, 100 kg fuel" in out
+    assert (tmp_path / "speed_trace.png").stat().st_size > 10_000
+
+
+def test_run_rejects_a_non_positive_step(capsys):
+    assert main(["run", "--car", str(SAMPLE_CAR), "--track", str(SAMPLE_TRACK), "--ds", "0"]) == 2
+    assert "error: --ds must be positive" in capsys.readouterr().err
