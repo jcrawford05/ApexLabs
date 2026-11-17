@@ -1,13 +1,22 @@
 {
   "schema_version": 1,
-  "note": "peak_power_kw is the Core doc's 2026 target, 723 kW (decision D3), replacing the UI's 745 kW. It is consistent with the 2026 limits in regulation_eras.json: 350 kW from the ERS-K plus 373 kW from the engine, which is a 3000 MJ/h fuel energy flow (833 kW) at 44.8 % thermal efficiency. mass_kg and max_rpm are the UI values. The torque curve, gear ratios, driveline efficiency, inertias, shift loss and power-map scales are added in phase P1.",
+  "note": "mass_kg and max_rpm are the UI values. Everything else is a PLACEHOLDER until calibration (track D). torque_curve is built from the 2026 limits in regulation_eras.json: engine power = 44.76 % thermal efficiency times the fuel energy flow limit (0.27 * rpm + 165 MJ/h below 10500 rpm, 3000 MJ/h above, C5.2.3 and C5.2.4), plus the ERS-K at 350 kW capped at 500 N.m (C5.2.7, C5.2.11). That gives the Core doc's 723 kW from 10500 rpm to the rev limit (decision D3). The ERS-K speed taper (C5.2.8) and energy limits are not modelled. power_map_scale is the desktop UI's kPower table. gear_ratios are a progressive set whose top gear gives the UI's 340 km/h at the rev limit with a 3.20 final drive. driveline_efficiency is the middle of the Core doc's 0.93 to 0.97 range. The inertias are order-of-magnitude guesses.",
   "power_units": [
     {
       "name": "V6 Hybrid Spec B",
       "mass_kg": 150.0,
-      "peak_power_kw": 723.0,
       "max_rpm": 15000.0,
-      "power_maps": ["Qualifying", "Race", "Save"]
+      "power_map_scale": { "Qualifying": 1.0, "Race": 0.97, "Save": 0.92 },
+      "torque_curve_rpm_nm": [
+        [4000, 869.5], [4500, 864.1], [5000, 859.8], [5500, 856.2], [6000, 853.2], [6500, 850.7],
+        [7000, 826.0], [7500, 792.3], [8000, 762.8], [8500, 736.8], [9000, 713.7], [9500, 693.0],
+        [10000, 674.4], [10500, 657.5], [11000, 627.6], [11500, 600.4], [12000, 575.3], [12500, 552.3],
+        [13000, 531.1], [13500, 511.4], [14000, 493.2], [14500, 476.1], [15000, 460.3]
+      ],
+      "gear_ratios": [4.720, 3.837, 3.198, 2.733, 2.377, 2.103, 1.886, 1.715],
+      "driveline_efficiency": 0.95,
+      "engine_inertia_kg_m2": 0.06,
+      "wheel_inertia_total_kg_m2": 4.0
     }
   ]
 }

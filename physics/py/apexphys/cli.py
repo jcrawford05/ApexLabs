@@ -1,4 +1,8 @@
-"""Command line: ``python -m apexphys run --car CAR.json --track TRACK.json``."""
+"""Command line.
+
+``python -m apexphys run --car CAR.json --track TRACK.json``
+``python -m apexphys straight-line --car CAR.json [--plots DIR]``
+"""
 
 import argparse
 import sys
@@ -14,6 +18,8 @@ from apexphys.params import (
     load_physics_data,
     load_track,
 )
+from apexphys.readouts import compute_readouts
+from apexphys.straight_line import acceleration_run, make_case
 from apexphys.types import CarParams, Environment, SolverConfig, TrackModel
 
 
@@ -70,6 +76,59 @@ def _run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _straight_line(args: argparse.Namespace) -> int:
+    data = load_physics_data(args.data)
+    car = load_car(args.car, data)
+    env = default_environment(data)
+    fuel_kg = default_solver_config().start_fuel_kg if args.fuel_kg is None else args.fuel_kg
+    cal = data.calibration
+
+    r = compute_readouts(car, env, cal, fuel_kg)
+    case = make_case(car, env, cal, fuel_kg)
+    target = min(units.kmh_to_ms(300.0), 0.999 * r.top_speed_m_s)
+    run = acceleration_run(case, target)
+
+    print(f"apexphys {__version__}")
+    print(f"Car: {car.name} (era: {car.era.name}), {fuel_kg:g} kg fuel")
+    print(
+        f"  mass {r.car_mass_kg:.1f} kg without fuel, {r.total_mass_kg:.1f} kg with fuel; "
+        f"era minimum {r.min_mass_kg:.1f} kg"
+    )
+    print(
+        f"  mandatory ballast {r.mandatory_ballast_kg:.1f} kg, "
+        f"overweight {r.overweight_kg:.1f} kg"
+    )
+    print(
+        f"  weight distribution {units.frac_to_pct(r.front_weight_fraction):.1f} % front, "
+        f"rake {units.rad_to_deg(r.rake_rad):.2f} deg"
+    )
+    print(
+        f"  drag area {r.drag_area_m2:.2f} m^2, "
+        f"air density {r.air_density_kg_m3:.4f} kg/m^3"
+    )
+    print(
+        f"  peak power {units.w_to_kw(r.peak_power_w):.0f} kW ({car.setup.power_map} map), "
+        f"top-gear limit {units.ms_to_kmh(r.top_gear_speed_m_s):.1f} km/h"
+    )
+    print(
+        f"  top speed {units.ms_to_kmh(r.top_speed_m_s):.1f} km/h "
+        f"(limited by {r.top_speed_limit})"
+    )
+    for kmh in (100.0, 200.0, 300.0):
+        t = run.time_to(units.kmh_to_ms(kmh))
+        result = "not reached" if t is None else f"{t:.2f} s"
+        print(f"  0-{kmh:.0f} km/h: {result}")
+
+    if args.plots is not None:
+        from apexphys import plots
+
+        args.plots.mkdir(parents=True, exist_ok=True)
+        plots.plot_force_envelope(case, args.plots / "force_envelope.png")
+        plots.plot_acceleration_run(case, run, args.plots / "acceleration_run.png")
+        print(f"Plots written to {args.plots}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="apexphys", description=__doc__)
     parser.add_argument("--version", action="version", version=__version__)
@@ -85,6 +144,20 @@ def main(argv: list[str] | None = None) -> int:
         help="parameter file directory (default: physics/data)",
     )
     run.set_defaults(handler=_run)
+
+    straight = commands.add_parser(
+        "straight-line", help="mass, top speed and standing-start acceleration"
+    )
+    straight.add_argument("--car", type=Path, required=True, help="car JSON file")
+    straight.add_argument("--fuel-kg", type=float, help="fuel on board (default: 30)")
+    straight.add_argument("--plots", type=Path, help="directory to write PNG plots to")
+    straight.add_argument(
+        "--data",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        help="parameter file directory (default: physics/data)",
+    )
+    straight.set_defaults(handler=_straight_line)
 
     args = parser.parse_args(argv)
     try:

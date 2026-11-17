@@ -48,7 +48,12 @@ def test_physics_data_loads_every_table(data):
 
 def test_parameter_values_are_converted_to_si(data):
     engine = data.power_units["V6 Hybrid Spec B"]
-    assert engine.peak_power_w == 723000.0
+    assert len(engine.gear_ratios) == 8
+    assert engine.map_scales == {"Qualifying": 1.0, "Race": 0.97, "Save": 0.92}
+    first_omega, first_torque = engine.torque_curve[0]
+    assert units.rad_s_to_rpm(first_omega) == pytest.approx(4000.0)
+    assert first_torque == 869.5
+    assert engine.torque_curve[-1][0] == pytest.approx(engine.max_omega_rad_s)
     assert units.rad_s_to_rpm(engine.max_omega_rad_s) == pytest.approx(15000.0)
     medium = data.tire_compounds["Medium Compound"]
     assert medium.t_opt_k == pytest.approx(373.15)
@@ -120,9 +125,52 @@ def test_missing_parameter_is_named(tmp_path):
     shutil.copytree(DEFAULT_DATA_DIR, tmp_path / "data")
     path = tmp_path / "data" / "power_units.json"
     doc = read_json(path)
-    del doc["power_units"][0]["peak_power_kw"]
+    del doc["power_units"][0]["max_rpm"]
     write_json(path, doc)
-    with pytest.raises(ParamError, match=r"power_units\[0\]: missing 'peak_power_kw'"):
+    with pytest.raises(ParamError, match=r"power_units\[0\]: missing 'max_rpm'"):
+        load_physics_data(tmp_path / "data")
+
+
+def edited_power_unit(tmp_path, edit):
+    shutil.copytree(DEFAULT_DATA_DIR, tmp_path / "data")
+    path = tmp_path / "data" / "power_units.json"
+    doc = read_json(path)
+    edit(doc["power_units"][0])
+    write_json(path, doc)
+    return tmp_path / "data"
+
+
+def test_gear_ratios_must_decrease(tmp_path):
+    def edit(pu):
+        pu["gear_ratios"][3] = 9.0
+
+    with pytest.raises(ParamError, match="'gear_ratios' must be positive and decreasing"):
+        load_physics_data(edited_power_unit(tmp_path, edit))
+
+
+def test_torque_curve_must_reach_the_rev_limit(tmp_path):
+    def edit(pu):
+        pu["torque_curve_rpm_nm"] = pu["torque_curve_rpm_nm"][:-2]
+
+    with pytest.raises(ParamError, match="must reach max_rpm"):
+        load_physics_data(edited_power_unit(tmp_path, edit))
+
+
+def test_torque_curve_rpm_must_increase(tmp_path):
+    def edit(pu):
+        pu["torque_curve_rpm_nm"][5][0] = 4000
+
+    with pytest.raises(ParamError, match="rpm values must increase"):
+        load_physics_data(edited_power_unit(tmp_path, edit))
+
+
+def test_missing_part_position_is_named(tmp_path):
+    shutil.copytree(DEFAULT_DATA_DIR, tmp_path / "data")
+    path = tmp_path / "data" / "chassis.json"
+    doc = read_json(path)
+    del doc["chassis"][0]["position_frac"]["fuel"]
+    write_json(path, doc)
+    with pytest.raises(ParamError, match="position_frac: missing 'fuel'"):
         load_physics_data(tmp_path / "data")
 
 

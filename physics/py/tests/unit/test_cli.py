@@ -35,3 +35,20 @@ def test_python_dash_m_entry_point():
     )
     assert result.returncode == 0, result.stderr
     assert "Demo Circuit" in result.stdout
+
+
+def test_straight_line_reports_readouts_and_writes_plots(tmp_path, capsys):
+    code = main(["straight-line", "--car", str(SAMPLE_CAR), "--plots", str(tmp_path / "plots")])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "mass 881.0 kg without fuel, 911.0 kg with fuel; era minimum 770.0 kg" in out
+    assert "top speed 340.0 km/h (limited by gearing)" in out
+    assert "0-300 km/h:" in out and "not reached" not in out
+    out.encode("ascii")
+    for name in ("force_envelope.png", "acceleration_run.png"):
+        assert (tmp_path / "plots" / name).stat().st_size > 10_000
+
+
+def test_straight_line_fuel_option(capsys):
+    assert main(["straight-line", "--car", str(SAMPLE_CAR), "--fuel-kg", "100"]) == 0
+    assert "981.0 kg with fuel" in capsys.readouterr().out

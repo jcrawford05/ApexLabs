@@ -12,6 +12,7 @@ from pathlib import Path
 from apexphys import units
 from apexphys.types import (
     GRIP_STATES,
+    POSITION_PARTS,
     SEGMENT_TYPES,
     AeroPackage,
     BrakeSet,
@@ -142,10 +143,56 @@ def _power_unit(row: dict, where: str) -> PowerUnit:
     return PowerUnit(
         name=_get(row, "name", where),
         mass_kg=_num(row, "mass_kg", where),
-        peak_power_w=units.kw_to_w(_num(row, "peak_power_kw", where)),
         max_omega_rad_s=units.rpm_to_rad_s(_num(row, "max_rpm", where)),
-        power_maps=tuple(_get(row, "power_maps", where)),
+        map_scales=_positive_numbers(row, "power_map_scale", where),
+        torque_curve=_torque_curve(row, where),
+        gear_ratios=_gear_ratios(row, where),
+        driveline_efficiency=_num(row, "driveline_efficiency", where),
+        engine_inertia_kg_m2=_num(row, "engine_inertia_kg_m2", where),
+        wheel_inertia_total_kg_m2=_num(row, "wheel_inertia_total_kg_m2", where),
     )
+
+
+def _positive_numbers(row: dict, key: str, where: str) -> dict[str, float]:
+    table = _get(row, key, where)
+    if not isinstance(table, dict) or not table:
+        raise ParamError(f"{where}: '{key}' must be a non-empty JSON object")
+    out = {name: _num(table, name, f"{where}.{key}") for name in table}
+    if min(out.values()) <= 0.0:
+        raise ParamError(f"{where}: '{key}' values must be positive")
+    return out
+
+
+def _torque_curve(row: dict, where: str) -> tuple[tuple[float, float], ...]:
+    key = "torque_curve_rpm_nm"
+    points = _get(row, key, where)
+    try:
+        curve = tuple((units.rpm_to_rad_s(float(n)), float(t)) for n, t in points)
+    except (TypeError, ValueError) as exc:
+        raise ParamError(f"{where}: '{key}' must be a list of [rpm, N.m] pairs") from exc
+    if len(curve) < 2:
+        raise ParamError(f"{where}: '{key}' needs at least two points")
+    if any(b[0] <= a[0] for a, b in zip(curve, curve[1:])):
+        raise ParamError(f"{where}: '{key}' rpm values must increase")
+    if any(t <= 0.0 for _, t in curve):
+        raise ParamError(f"{where}: '{key}' torques must be positive")
+    max_omega = units.rpm_to_rad_s(_num(row, "max_rpm", where))
+    if curve[-1][0] < max_omega * (1.0 - 1e-9):
+        raise ParamError(f"{where}: '{key}' must reach max_rpm")
+    return curve
+
+
+def _gear_ratios(row: dict, where: str) -> tuple[float, ...]:
+    ratios = _get(row, "gear_ratios", where)
+    if (
+        not isinstance(ratios, list)
+        or not ratios
+        or any(isinstance(r, bool) or not isinstance(r, (int, float)) for r in ratios)
+    ):
+        raise ParamError(f"{where}: 'gear_ratios' must be a non-empty list of numbers")
+    if ratios[-1] <= 0.0 or any(b >= a for a, b in zip(ratios, ratios[1:])):
+        raise ParamError(f"{where}: 'gear_ratios' must be positive and decreasing")
+    return tuple(float(r) for r in ratios)
 
 
 def _tire_compound(row: dict, where: str) -> TireCompound:
@@ -177,6 +224,10 @@ def _chassis(row: dict, where: str) -> Chassis:
         wheelbase_m=_num(row, "wheelbase_m", where),
         cg_height_m=_num(row, "cg_height_m", where),
         tire_radius_m=_num(row, "tire_radius_m", where),
+        position_frac={
+            part: _num(_get(row, "position_frac", where), part, f"{where}.position_frac")
+            for part in POSITION_PARTS
+        },
     )
 
 
@@ -224,6 +275,9 @@ def load_physics_data(data_dir: Path | str = DEFAULT_DATA_DIR) -> PhysicsData:
         f"{eras_path}: default_era",
     )
     calibration_path = data_dir / "calibration.json"
+    calibration = _read_json(calibration_path)
+    rolling = _get(calibration, "rolling_resistance", str(calibration_path))
+    rolling_where = f"{calibration_path}: rolling_resistance"
     return PhysicsData(
         power_units=table("power_units.json", "power_units", _power_unit),
         tire_compounds=table("tire_compounds.json", "compounds", _tire_compound),
@@ -234,10 +288,10 @@ def load_physics_data(data_dir: Path | str = DEFAULT_DATA_DIR) -> PhysicsData:
         default_era=default_era,
         calibration=Calibration(
             sea_level_pressure_pa=_num(
-                _read_json(calibration_path),
-                "sea_level_pressure_pa",
-                str(calibration_path),
-            )
+                calibration, "sea_level_pressure_pa", str(calibration_path)
+            ),
+            c_rr0=_num(rolling, "c0", rolling_where),
+            c_rr2_s2_per_m2=_num(rolling, "c2_s2_per_m2", rolling_where),
         ),
     )
 
@@ -260,7 +314,9 @@ def _setup(raw: dict, power_unit: PowerUnit, where: str) -> CarSetup:
         floor_setting=units.pct_to_frac(_num(s, "floor_load_pct", where)),
         pressure_front_pa=units.psi_to_pa(_num(s, "tire_pressure_front_psi", where)),
         pressure_rear_pa=units.psi_to_pa(_num(s, "tire_pressure_rear_psi", where)),
-        power_map=_choice(s["power_map"], power_unit.power_maps, "power_map", where),
+        power_map=_choice(
+            s["power_map"], tuple(power_unit.map_scales), "power_map", where
+        ),
         final_drive=_num(s, "final_drive", where),
         shift_omega_rad_s=units.rpm_to_rad_s(_num(s, "shift_rpm", where)),
         ballast_kg=_num(s, "ballast_kg", where),

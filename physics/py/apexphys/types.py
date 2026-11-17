@@ -15,9 +15,13 @@ from dataclasses import dataclass
 class PowerUnit:
     name: str
     mass_kg: float
-    peak_power_w: float
     max_omega_rad_s: float
-    power_maps: tuple[str, ...]
+    map_scales: dict[str, float]  # power map name -> torque scale k_map
+    torque_curve: tuple[tuple[float, float], ...]  # (omega rad/s, torque N.m), rising omega
+    gear_ratios: tuple[float, ...]  # i_1 .. i_N, first gear first
+    driveline_efficiency: float
+    engine_inertia_kg_m2: float
+    wheel_inertia_total_kg_m2: float  # all four wheels
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,18 @@ class AeroPackage:
     balance_front: float  # fraction of downforce on the front axle
 
 
+POSITION_PARTS = (
+    "base",
+    "driver",
+    "engine",
+    "tires",
+    "brakes",
+    "aero",
+    "fuel",
+    "mandatory_ballast",
+)
+
+
 @dataclass(frozen=True)
 class Chassis:
     name: str
@@ -47,6 +63,9 @@ class Chassis:
     wheelbase_m: float
     cg_height_m: float
     tire_radius_m: float
+    # Longitudinal position of each part, as a fraction of the wheelbase
+    # behind the front axle. Keys: POSITION_PARTS.
+    position_frac: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -75,6 +94,8 @@ class RegulationEra:
 @dataclass(frozen=True)
 class Calibration:
     sea_level_pressure_pa: float
+    c_rr0: float  # C6: C_rr = c_rr0 + c_rr2 * v^2
+    c_rr2_s2_per_m2: float
 
 
 # ----------------------------------------------------------------------- car

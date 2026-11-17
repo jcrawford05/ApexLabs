@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
-  "note": "Home of the surface, evolution, wet, brake and rolling-resistance [CAL] numbers. Each one is added by the phase that first uses it.",
-  "sea_level_pressure_pa": 101325.0
+  "note": "Home of the surface, evolution, wet, brake and rolling-resistance [CAL] numbers. Each one is added by the phase that first uses it. rolling_resistance (C6: C_rr = c0 + c2 * v^2, v in m/s) holds PLACEHOLDER values until calibration.",
+  "sea_level_pressure_pa": 101325.0,
+  "rolling_resistance": { "c0": 0.012, "c2_s2_per_m2": 1.0e-6 }
 }
