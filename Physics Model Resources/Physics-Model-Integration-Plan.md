@@ -1,6 +1,6 @@
 # Physics Model: Integration Plan
 
-**Status:** Draft v0.2 · 2026-11-16 · tracks Physics Model v0.10 · strategy: Python reference first, then C++ port (Option B)
+**Status:** Draft v0.3 · 2026-11-17 · tracks Physics Model v0.10 · strategy: Python reference first, then C++ port (Option B)
 
 [← Overview](Physics-Model-Overview) · [Core Model](Physics-Model-Core) · [Second-Tier Model](Physics-Model-Second-Tier) · [Sources](Physics-Model-Sources)
 
@@ -254,9 +254,9 @@ The model stays physics. Calibration only picks values for [CAL] numbers so simu
 
 These need a decision or a data fix. None blocks P0–P2 or C0.
 
-1. **Wheelbase:** UI default 3.60 m, while FIA Issue 20 caps it at 3.40 m (Sources [17]). Era defaults (Overview, decision 6) should replace the UI default.
-2. **Peak power:** `Vehicle::engine_peak_kw` = 745 and `sample_vehicle.json` = 745 kW, but the Core doc targets 723 kW. Pick one in `power_units.json`.
-3. **Mass breakdown:** today's UI total (540 + 150 + 18 + 40 + 46 + ballast ≈ 799 kg) has no driver line and no `m_base` split. C1 needs `m_base` and `m_driver` (82 kg floor) in `chassis.json`, retuned so a stock car lands just above the era minimum (still-open question 2).
+1. **Wheelbase:** *Resolved (D3):* `chassis.json` uses the 2026 limit, 3.40 m (C2.3.3). The desktop UI default (3.60 m in `vehicle.h` and `sample_vehicle.json`) still has to follow.
+2. **Peak power:** *Resolved (D3):* `power_units.json` uses 723 kW. That is 350 kW from the ERS-K (C5.2.7) plus 373 kW from the engine, which is the 3000 MJ/h fuel energy flow limit (C5.2.3, 833 kW) at 44.8 % thermal efficiency. The desktop UI still shows 745 kW.
+3. **Mass breakdown:** *Resolved (D2):* `chassis.json` has `m_base_kg` = 540 and a separate 82 kg driver. The stock car's dry parts then total 881 kg (540 + 82 + 150 + 46 + 40 + 18 + 5 kg ballast), about 111 kg over the era minimum of 724 kg plus the tyre mass. C1 carries that as `overweight`.
 4. **Inputs that become outputs:** `drag_area_m2`, `brakes_max_decel_g` and `engine_peak_kw` are editable or stored inputs in `Vehicle` today. Make them read-only readouts in the UI.
 5. **Track data is too thin for T7 wind and C6 grade:** no corner direction, heading, elevation profile or `h_track`. Add `direction` (L/R) and optional `elevation_m` per segment and `elevation_m` per course to the track JSON and `course_segments` (schema v4). D1 (§5.2) fills these from OpenF1 `location` for real circuits. The Demo Circuit needs them added by hand, and until then its wind and grade are 0.
 6. **Settings "Physics time step"** needs to become "Solver resolution" (C8 decision). The UI label and the meaning of `prefs.time_step` both change.
@@ -264,14 +264,16 @@ These need a decision or a data fix. None blocks P0–P2 or C0.
 8. **Compounds:** the code has only Soft/Medium/Hard (`TireCatalog()` is hard-coded in `vehicle.cpp`). The 3B compound table needs Inter/Wet and has to load from data, so the Tires panel should read it from `PhysicsData`.
 9. **License:** OpenLAP [9] is GPL v3. Read it for ideas but copy no code.
 10. **Unverified sources:** do not cite Sources entries still marked Partly/Not found in reports until they're checked. The code itself only needs the equation forms, which are standard.
+11. **Power unit mass:** the UI power unit is 150 kg, below the 185 kg minimum overall power unit mass (C5.5.2). Found while filling the era table; needs a decision.
+12. **Fuel LHV:** T6 quotes 43–44 MJ/kg, but C16.2 limits the 2026 fuel to 38.0–41.0 MJ/kg. Use the era value in T6.
 
 ## 7. Decisions the team needs to make
 
 | # | Decision | Needed by |
 |---|---|---|
-| D1 | Default regulation era and its rule values (Overview, still-open 1) | P1 (C1 minimum mass) |
-| D2 | Default `m_base` / "Car mass" shown with or without fuel (still-open 2) | P1 |
-| D3 | Peak power 723 vs 745 kW; wheelbase default | P1 |
+| D1 | ~~Default regulation era and its rule values~~ **Decided:** "Apex 2026 Default", with rule values read from FIA Section C Issue 21 (2026-10-19) into `physics/data/regulation_eras.json` | P1 (C1 minimum mass) |
+| D2 | ~~Default `m_base`~~ **Decided:** `m_base` = 540 kg. Still open: "Car mass" shown with or without fuel (the FIA Car Mass is without fuel) | P1 |
+| D3 | ~~Peak power 723 vs 745 kW; wheelbase default~~ **Decided:** follow the 2026 regulations: 723 kW and 3.40 m | P1 |
 | D4 | C++ test framework (proposed: doctest); whether `physics/` joins a top-level CMake superproject or stays `add_subdirectory` from `desktop/`; Python version and dependency pins | P0 / C0 |
 | D5 | Floor-setting scheme approval (still-open 3) | P3 (physics), C3 (UI) |
 | D6 | Water-depth input: derived from rain only, or an explicit "standing water" slider | P4 (T8) |
@@ -282,5 +284,6 @@ These need a decision or a data fix. None blocks P0–P2 or C0.
 
 ## Revision history
 
+- v0.3: recorded decisions D1–D3 (2026 default era with rule values from FIA Section C Issue 21, `m_base` 540 kg, 723 kW and 3.40 m wheelbase); added gaps 11 and 12.
 - v0.2: adopted Option B. The Python reference (`physics/py`) is built first and the C++ engine is a parity-tested port. Work splits into three tracks (P, D, C). Added golden-file parity tests, the OpenF1 data pipeline, staged calibration with held-out circuits, and data limits.
 - v0.1: initial plan covering architecture, UI/physics mapping, hydroplaning (T8), phases, gaps and decisions.

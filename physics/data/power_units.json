@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "note": "peak_power_kw is the Core doc's 2026 target, 723 kW (decision D3), replacing the UI's 745 kW. It is consistent with the 2026 limits in regulation_eras.json: 350 kW from the ERS-K plus 373 kW from the engine, which is a 3000 MJ/h fuel energy flow (833 kW) at 44.8 % thermal efficiency. mass_kg and max_rpm are the UI values. The torque curve, gear ratios, driveline efficiency, inertias, shift loss and power-map scales are added in phase P1.",
+  "power_units": [
+    {
+      "name": "V6 Hybrid Spec B",
+      "mass_kg": 150.0,
+      "peak_power_kw": 723.0,
+      "max_rpm": 15000.0,
+      "power_maps": ["Qualifying", "Race", "Save"]
+    }
+  ]
+}

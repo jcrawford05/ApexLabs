@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "note": "m_base_kg is the UI chassis mass, 540 kg (decision D2); the driver is a separate 82 kg line, the C4.5.2 floor. wheelbase_m is the 2026 limit, 3.40 m (decision D3). cg_height_m is the UI default. tire_radius_m is the Core doc default (about 0.33 m, to be calibrated). Component positions, track width, k_axle, roll split and C_alpha are added by the phases that need them.",
+  "chassis": [
+    {
+      "name": "Standard Monocoque",
+      "m_base_kg": 540.0,
+      "driver_mass_kg": 82.0,
+      "wheelbase_m": 3.40,
+      "cg_height_m": 0.30,
+      "tire_radius_m": 0.33
+    }
+  ],
+  "brake_sets": [
+    { "name": "Carbon Disc Set", "mass_kg": 40.0 }
+  ]
+}

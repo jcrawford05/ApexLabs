@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "note": "Stand-in for the regulation_era / regulation_rule tables (3B) until schema v4. Era names match kRegulations in desktop/src/app.cpp. 'Apex 2026 Default' is the default era (decision D1); every value in it was read from the FIA text named in its 'source', and source_article is the article it came from. Not in that text, so not listed: the Nominal Tyre Mass (published by the tyre supplier, C4.7), a fuel mass limit and a fixed rev limit.",
+  "default_era": "Apex 2026 Default",
+  "eras": [
+    {
+      "name": "Apex 2026 Default",
+      "is_sandbox": false,
+      "source": "FIA 2026 Formula 1 Regulations, Section C [Technical], Issue 21, 19 October 2026. https://www.fia.com/system/files/documents/fia_2026_f1_regulations_-_section_c_technical_-_iss_21_-_2026-10-19.pdf",
+      "rules": [
+        { "rule_key": "min_mass_no_fuel",              "value": 724.0,  "unit": "kg",       "severity": "hard", "source_article": "C4.1 (plus the Nominal Tyre Mass; Car Mass includes tyres, driver and driver ballast, without fuel)" },
+        { "rule_key": "min_mass_no_fuel_qualifying",   "value": 726.0,  "unit": "kg",       "severity": "info", "source_article": "C4.1 (Qualifying and Sprint Qualifying; plus the Nominal Tyre Mass)" },
+        { "rule_key": "min_driver_mass",               "value": 82.0,   "unit": "kg",       "severity": "hard", "source_article": "C4.5.2 (driver reference mass plus driver ballast)" },
+        { "rule_key": "front_axle_mass_fraction_min",  "value": 0.44,   "unit": "-",        "severity": "warn", "source_article": "C4.2 (fraction of the Minimum Mass; Qualifying and Sprint Qualifying)" },
+        { "rule_key": "rear_axle_mass_fraction_min",   "value": 0.54,   "unit": "-",        "severity": "warn", "source_article": "C4.2 (fraction of the Minimum Mass; Qualifying and Sprint Qualifying)" },
+
+        { "rule_key": "wheelbase_max",                 "value": 3.40,   "unit": "m",        "severity": "hard", "source_article": "C2.3.3" },
+        { "rule_key": "width_max",                     "value": 1.90,   "unit": "m",        "severity": "hard", "source_article": "C2.3.1 (950 mm either side of the centre plane)" },
+
+        { "rule_key": "ice_layout",                    "value": "1600 cc, six cylinders, 90 degree V", "unit": "-", "severity": "info", "source_article": "C5.1.2, C5.1.3" },
+        { "rule_key": "mguh_allowed",                  "value": false,  "unit": "-",        "severity": "info", "source_article": "C5.2.1 (only the engine and the ERS-K may propel the car or recharge)" },
+        { "rule_key": "engine_mass_min",               "value": 185.0,  "unit": "kg",       "severity": "warn", "source_article": "C5.5.2 (overall mass of the power unit)" },
+        { "rule_key": "fuel_energy_flow_max",          "value": 3000.0, "unit": "MJ/h",     "severity": "hard", "source_article": "C5.2.3" },
+        { "rule_key": "fuel_energy_flow_full_rpm",     "value": 10500.0, "unit": "rpm",     "severity": "info", "source_article": "C5.2.4 (below this speed the flow limit is slope * rpm + offset)" },
+        { "rule_key": "fuel_energy_flow_rpm_slope",    "value": 0.27,   "unit": "MJ/h/rpm", "severity": "info", "source_article": "C5.2.4" },
+        { "rule_key": "fuel_energy_flow_rpm_offset",   "value": 165.0,  "unit": "MJ/h",     "severity": "info", "source_article": "C5.2.4" },
+        { "rule_key": "fuel_lhv_min",                  "value": 38.0,   "unit": "MJ/kg",    "severity": "info", "source_article": "C16.2" },
+        { "rule_key": "fuel_lhv_max",                  "value": 41.0,   "unit": "MJ/kg",    "severity": "info", "source_article": "C16.2" },
+
+        { "rule_key": "mguk_power_max",                "value": 350.0,  "unit": "kW",       "severity": "hard", "source_article": "C5.2.7 (ERS-K electrical DC power)" },
+        { "rule_key": "mguk_power_speed_taper",        "value": "kW = 1800 - 5 * kph below 340 kph; 6900 - 20 * kph from 340 to 345 kph; 0 at 345 kph and above", "unit": "kW", "severity": "info", "source_article": "C5.2.8.i (Overtake not active)" },
+        { "rule_key": "mguk_torque_max",               "value": 500.0,  "unit": "N.m",      "severity": "info", "source_article": "C5.2.11 (referenced to crankshaft speed)" },
+        { "rule_key": "energy_store_soc_window_max",   "value": 4.0,    "unit": "MJ",       "severity": "info", "source_article": "C5.2.9" },
+        { "rule_key": "recharge_per_lap_max",          "value": 8.5,    "unit": "MJ",       "severity": "info", "source_article": "C5.2.10 (may be reduced at some circuits)" },
+
+        { "rule_key": "forward_gears",                 "value": 8.0,    "unit": "-",        "severity": "hard", "source_article": "C9.6.1" },
+        { "rule_key": "upshift_duration_max",          "value": 0.200,  "unit": "s",        "severity": "info", "source_article": "C9.8.4" },
+        { "rule_key": "downshift_duration_max",        "value": 0.300,  "unit": "s",        "severity": "info", "source_article": "C9.8.4" },
+
+        { "rule_key": "brake_disc_diameter_front_max", "value": 0.345,  "unit": "m",        "severity": "info", "source_article": "C11.3.3 (325 to 345 mm)" },
+        { "rule_key": "brake_disc_diameter_rear_max",  "value": 0.280,  "unit": "m",        "severity": "info", "source_article": "C11.3.3 (260 to 280 mm)" }
+      ]
+    },
+    {
+      "name": "Apex 2026 Low Budget",
+      "is_sandbox": false,
+      "rules": []
+    },
+    {
+      "name": "Open (no limits)",
+      "is_sandbox": true,
+      "rules": []
+    }
+  ]
+}

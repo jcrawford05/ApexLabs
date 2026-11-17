@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "note": "Lumped values copied from database/data/sample_vehicle.json. downforce_area_m2 is C_L*A with positive = downforce (the sample file stores it as lift_area_m2 = -2.9). Per-element coefficients, the ride-height curve and the floor parameters replace these lumped values in phases P1 and P3.",
+  "aero_packages": [
+    {
+      "name": "Low Downforce Package",
+      "mass_kg": 18.0,
+      "drag_area_m2": 1.10,
+      "downforce_area_m2": 2.9,
+      "balance_front": 0.42
+    }
+  ]
+}

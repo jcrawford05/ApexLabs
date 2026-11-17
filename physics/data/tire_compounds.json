@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "note": "Supersedes database/data/tire_catalog.json. Values copied from that catalog (peak_grip_coeff -> mu_ref, optimal_temp_c -> t_opt_c). Intermediate and Wet rows and the remaining per-compound parameters (k_ls, p_opt, k_p, w_T, k_wear, k_deg, wet response, groove depth) are added by the phases that need them; decision D7 is open.",
+  "compounds": [
+    { "name": "Soft Compound",   "short": "Soft",   "mass_kg": 44.0, "mu_ref": 1.80, "t_opt_c": 95.0,  "wear_rate_per_km": 0.0045 },
+    { "name": "Medium Compound", "short": "Medium", "mass_kg": 46.0, "mu_ref": 1.65, "t_opt_c": 100.0, "wear_rate_per_km": 0.0025 },
+    { "name": "Hard Compound",   "short": "Hard",   "mass_kg": 48.0, "mu_ref": 1.52, "t_opt_c": 108.0, "wear_rate_per_km": 0.0014 }
+  ]
+}

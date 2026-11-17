@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apexphys"
+description = "Apex Labs physics model: Python reference implementation and calibration"
+requires-python = ">=3.11"
+dynamic = ["version"]
+dependencies = [
+    "numpy~=2.5",
+    "scipy~=1.18",
+    "pandas~=3.1",
+    "pyarrow~=26.0",
+    "matplotlib~=3.11",
+    "requests~=2.34",
+]
+
+[project.optional-dependencies]
+dev = ["pytest~=9.2"]
+
+[tool.setuptools.dynamic]
+version = { attr = "apexphys.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["apexphys*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
